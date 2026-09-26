@@ -43,6 +43,13 @@ require_tool() {
 # noobz_accounts: the NoobzVPN account list, whichever CLI form is installed.
 noobz_accounts() { noobzvpns print-all 2>/dev/null || noobzvpns --info-all-user 2>/dev/null; }
 
+# re_escape <value>: quote a value for use inside a grep -E pattern. The panel
+# stores names verbatim and the handlers build `^### <name>` patterns from a
+# caller-supplied name, which must never be treated as a regex - without this,
+# /delete-xray {"username":"."} matched and deleted an unrelated account, and
+# {"username":".*"} deleted every account of the transport.
+re_escape() { printf '%s' "$1" | sed 's/[].[^$*+?(){}|\\]/\\&/g'; }
+
 # ---- output helpers ------------------------------------------------------
 strip_ansi()  { sed 's/\x1b\[[0-9;]*m//g'; }
 json_array()  { printf '%s' "$1" | jq -R -s 'split("\n") | map(select(length>0))'; }

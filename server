@@ -26,9 +26,20 @@ import logging
 import os
 import subprocess
 import sys
+import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 METHODS = ("GET", "POST", "DELETE", "PUT", "PATCH", "CONNECT", "TRACE", "HEAD", "OPTIONS")
+
+# The panel's scripts edit shared state - json/*.json, /etc/passwd, the service
+# units - with no locking of their own. Two requests must therefore never run
+# them at the same time: with the server threaded, twelve concurrent
+# /add-vmess calls left only eight accounts because each script rewrote the
+# whole file and lost the others' edits. The reference server was
+# single-threaded, which serialised them; this lock keeps the threading benefit
+# for the cheap paths (auth, 404, OPTIONS) while making the handler run
+# exclusive.
+RUN_LOCK = threading.Lock()
 
 
 def load_tokens(path):
@@ -100,9 +111,10 @@ class Handler(BaseHTTPRequestHandler):
             # An empty string, not None: None would let the handler inherit the
             # server's stdin, so a GET handler running the server by hand would
             # block in `cat` instead of seeing EOF.
-            result = subprocess.run([script], input=(body if body is not None else ""),
-                                    capture_output=True, text=True, check=True,
-                                    env=env, timeout=180)
+            with RUN_LOCK:
+                result = subprocess.run([script], input=(body if body is not None else ""),
+                                        capture_output=True, text=True, check=True,
+                                        env=env, timeout=180)
             self._send(200, result.stdout.encode())
             self._info("ok: %s" % script)
         except subprocess.CalledProcessError as exc:

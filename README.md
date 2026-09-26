@@ -105,6 +105,10 @@ consistent shape instead of two (see `project-information/is-decision.md` in `fn
 
 ## Security
 
+- Handlers run **one at a time**. The panel's scripts edit shared state (
+  `json/*.json`, `/etc/passwd`, service units) with no locking of their own, so the
+  server serialises handler execution; concurrent calls queue instead of racing. Cheap
+  paths (auth, 404, `OPTIONS`) are still served in parallel.
 - The server binds **`127.0.0.1`** by default, so the API is reachable only through nginx's
   `/api/` location; pass `--bind` explicitly if you ever want it elsewhere. It also rejects paths
   with more than one segment, so a request cannot reach a handler outside `/usr/bin/rere/`.

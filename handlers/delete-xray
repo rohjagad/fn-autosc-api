@@ -3,6 +3,7 @@
 # Body: {"username":"alice"}
 . /usr/local/lib/fn-api/lib.sh
 require username user
+esc="$(re_escape "$user")"
 
 seen=""
 deleted=""
@@ -10,7 +11,7 @@ for t in ws upgrade split grpc; do
     json="/etc/xray/json/${t}.json"
     core="$t"
     [ "$t" = upgrade ] && core="http"          # the name the create endpoints accept
-    grep -qE "^### ${user}( |$)" "$json" 2>/dev/null || continue
+    grep -qE "^### ${esc}( |$)" "$json" 2>/dev/null || continue
     seen="$seen $core"
     case $t in
         ws)      printf '%s\n' "$user" | /usr/bin/delete-ws    >/dev/null 2>&1 ;;
@@ -20,7 +21,7 @@ for t in ws upgrade split grpc; do
     esac
     # Verify, like add-xray and delete-ssh do; a delete script that failed must
     # not be reported as a successful removal.
-    grep -qE "^### ${user}( |$)" "$json" 2>/dev/null && continue
+    grep -qE "^### ${esc}( |$)" "$json" 2>/dev/null && continue
     deleted="$deleted $core"
 done
 

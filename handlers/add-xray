@@ -7,6 +7,7 @@ proto="${0##*/add-}"
 [ "$1" = "--proto" ] && proto="${2:-}"
 
 require username user
+esc="$(re_escape "$user")"
 core="$(field core ws)"
 days="$(field expired 30)"
 ip="$(field limit-ip 1)"
@@ -23,10 +24,10 @@ script="/usr/bin/add-${proto}-${core}"
 # The panel validates the username itself and re-prompts; it needs exactly the
 # five answers its prompts expect (username, limit-ip, quota, days, uuid).
 out="$(printf '%s\n%s\n%s\n%s\n\n' "$user" "$ip" "$quota" "$days" | "$script" 2>&1 | strip_ansi)"
-grep -qE "^### ${user}( |$)" /etc/xray/json/*.json 2>/dev/null || \
+grep -qE "^### ${esc}( |$)" /etc/xray/json/*.json 2>/dev/null || \
     fail "the panel did not create '${user}'$(panel_reason "$out" | sed 's/^/: /')"
 
-exp="$(grep -hoE "^### ${user} [0-9-]+" /etc/xray/json/*.json 2>/dev/null | awk '{print $3}' | head -1)"
+exp="$(grep -hoE "^### ${esc} [0-9-]+" /etc/xray/json/*.json 2>/dev/null | awk '{print $3}' | head -1)"
 links="$(printf '%s' "$out" | grep -oE '(vmess|vless|trojan)://[^[:space:]]+')"
 jq -nc --arg u "$user" --arg p "$proto" --arg c "$core" --arg e "$exp" \
        --argjson l "$(json_array "$links")" \

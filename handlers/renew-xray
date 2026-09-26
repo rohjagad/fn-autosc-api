@@ -5,6 +5,7 @@
 # quota? (y/n)"; the account's usage is kept (answer n).
 . /usr/local/lib/fn-api/lib.sh
 require username user
+esc="$(re_escape "$user")"
 days="$(field days 30)"
 core="$(field core ws)"
 
@@ -17,9 +18,9 @@ case "$core" in
 esac
 [ -x "$tool" ] || fail "this panel edition does not ship '${tool##*/}'"
 
-grep -qE "^### ${user}( |$)" "$json" 2>/dev/null || fail "no such account in '${core}': ${user}"
+grep -qE "^### ${esc}( |$)" "$json" 2>/dev/null || fail "no such account in '${core}': ${user}"
 
-expiry() { grep -hoE "^### ${user} [0-9-]+" "$json" 2>/dev/null | awk '{print $3}' | head -1; }
+expiry() { grep -hoE "^### ${esc} [0-9-]+" "$json" 2>/dev/null | awk '{print $3}' | head -1; }
 before="$(expiry)"
 printf '%s\n%s\n%s\n' "$user" "$days" "n" | "$tool" >/dev/null 2>&1
 after="$(expiry)"

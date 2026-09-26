@@ -12,5 +12,5 @@ else
     noobzvpns --add-user "$user" "$pass" >/dev/null 2>&1
     noobzvpns --expired-user "$user" "$days" >/dev/null 2>&1
 fi
-noobz_accounts | grep -q "$user" || fail "the panel did not create '${user}'"
+noobz_accounts | grep -qF "$user" || fail "the panel did not create '${user}'"
 jq -nc --arg u "$user" --arg p "$pass" --arg e "$days" '{status:"success",username:$u,password:$p,expired:$e}'
