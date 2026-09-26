@@ -2,14 +2,13 @@
 # FN AutoSC - FN-API installer / menu.
 #
 # The panel's nginx config already proxies /api/ to 127.0.0.1:9000. This installs
-# what answers there: the FN-API server (from the operator's FN-API repo) plus the
-# endpoint handlers in /usr/bin/rere/ that wrap the panel's own scripts.
+# what answers there: the server from this repository plus the endpoint handlers in
+# /usr/bin/rere/ that wrap the panel's own scripts.
 #
 # Usage:  menu-api            (interactive menu)
 #         menu-api install    uninstall | status | token
 #
 hosting="https://raw.githubusercontent.com/rohjagad/fn-autosc-api/main"
-api_repo="https://raw.githubusercontent.com/rohjagad/FN-API/main"
 HANDLERS="ping add-xray add-vmess add-vless add-trojan addssh add-noobz delete-xray delete-ssh delete-noobz list-xray list-ssh list-noobz cek-xray cek-ssh unsupported"
 KEY=/etc/xray/.key
 UNIT=/etc/systemd/system/api.service
@@ -38,16 +37,14 @@ install_api() {
     command -v jq      >/dev/null || apt-get install -y -qq jq
     command -v curl    >/dev/null || apt-get install -y -qq curl
     echo "  fetching the API server..."
-    curl -fsSL -o /usr/bin/api-server "$api_repo/core/server" || { echo "  FAILED to fetch core/server"; return 1; }
-    # bind loopback - nginx is the only thing that should reach it
-    sed -i "s/('', port)/('127.0.0.1', port)/" /usr/bin/api-server
+    curl -fsSL -o /usr/bin/api-server "$hosting/server" || { echo "  FAILED to fetch server"; return 1; }
     chmod +x /usr/bin/api-server
 
     mkdir -p /usr/local/lib/fn-api /usr/bin/rere /etc/xray
-    curl -fsSL -o /usr/local/lib/fn-api/lib.sh "$hosting/api/lib.sh" || { echo "  FAILED to fetch api/lib.sh"; return 1; }
+    curl -fsSL -o /usr/local/lib/fn-api/lib.sh "$hosting/lib.sh" || { echo "  FAILED to fetch lib.sh"; return 1; }
     chmod +x /usr/local/lib/fn-api/lib.sh
     for h in $HANDLERS; do
-        curl -fsSL -o "/usr/bin/rere/$h" "$hosting/api/handlers/$h" && chmod +x "/usr/bin/rere/$h"
+        curl -fsSL -o "/usr/bin/rere/$h" "$hosting/handlers/$h" && chmod +x "/usr/bin/rere/$h"
     done
     ln -sf unsupported /usr/bin/rere/add-ss
     ln -sf unsupported /usr/bin/rere/add-socks

@@ -3,21 +3,21 @@
 Restored API layer for the **FN AutoSC** autoscript (the panel in
 [`rohjagad/fn-autosc`](https://github.com/rohjagad/fn-autosc)).
 
-The panel's nginx config proxies `/api/` to `127.0.0.1:9000`. The service that answers there is
-[`FN-API`](https://github.com/rohjagad/FN-API) (`core/server`, a Python HTTP server on `:9000`), but
-the pieces it dispatches to were missing: it runs `/usr/bin/rere/<endpoint>`, and that handler
-bundle plus the `menu-api` command were lost - the original came from
-`https://scvps.rerechanstore.eu.org/rere` (Rerechan's infrastructure, now dead) and the upstream
-parent repository is gone.
+The panel's nginx config proxies `/api/` to `127.0.0.1:9000`, and the endpoints under it
+(`/api/add-vmess`, `/api/list-xray`, ...) are what a web UI would call. The implementation was lost:
+the original handler bundle came from `https://scvps.rerechanstore.eu.org/rere` (Rerechan's
+infrastructure, now dead) and the upstream parent repository is gone.
 
-This repository restores them. **`rohjagad/FN-API` is left untouched and is still used read-only**
-for `core/server`; everything restored lives here.
+This repository is the complete, self-contained API for the panel - **server, handlers and
+installer**. [`FN-API`](https://github.com/rohjagad/FN-API) is kept only as a reference for the
+original endpoint list; nothing here fetches or depends on it.
 
 ## Layout
 
 | Path | What it is |
 | :-- | :-- |
-| `menu-api` | installer / menu: install, uninstall, status, regenerate token. Fetches the server from FN-API, patches it to bind loopback, writes `/etc/xray/.key`, installs `lib.sh` and the handlers, creates `api.service` |
+| `server` | the API server (Python 3, stdlib only). Binds `127.0.0.1:9000` by default, authenticates against `/etc/xray/.key`, runs `/usr/bin/rere/<endpoint>` with the body on stdin and returns its stdout; logs to `/etc/xray/api.log` |
+| `menu-api` | installer / menu: install, uninstall, status, regenerate token. Installs `server`, `lib.sh` and the handlers, writes `/etc/xray/.key`, creates `api.service` |
 | `lib.sh` | shared helpers, installed to `/usr/local/lib/fn-api/lib.sh` - reads a JSON body on stdin, writes JSON on stdout |
 | `handlers/` | one executable per endpoint, each wrapping the panel's own scripts |
 
@@ -72,8 +72,9 @@ account type at all; they return a clear error instead.
 
 ## Security
 
-- `menu-api install` patches the fetched server to bind **`127.0.0.1`** (upstream binds all
-  interfaces), so the API is reachable only through nginx's `/api/` location.
+- The server binds **`127.0.0.1`** by default, so the API is reachable only through nginx's
+  `/api/` location; pass `--bind` explicitly if you ever want it elsewhere. It also rejects paths
+  with more than one segment, so a request cannot reach a handler outside `/usr/bin/rere/`.
 - The handlers run **as root** (they wrap the panel's scripts), so treat the token as a root
   credential: it is generated with 40 random characters and stored `0600` in `/etc/xray/.key`.
 - Consider restricting the nginx `/api/` location by source IP if only your web UI should reach it.
