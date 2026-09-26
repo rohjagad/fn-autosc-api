@@ -1,0 +1,14 @@
+#!/bin/bash
+# FN-API: create a NoobzVPN account. Body: {"username":"alice","password":"pw","expired":30}
+. /usr/local/lib/fn-api/lib.sh
+user="$(need username)"
+pass="$(need password)"
+days="$(field expired 30)"
+if noobzvpns add --help >/dev/null 2>&1; then
+  noobzvpns add --password "$pass" --expired "$days" "$user" >/dev/null 2>&1
+else
+  noobzvpns --add-user "$user" "$pass" >/dev/null 2>&1
+  noobzvpns --expired-user "$user" "$days" >/dev/null 2>&1
+fi
+noobzvpns print-all 2>/dev/null | grep -q "$user" || fail "the panel did not create '${user}'"
+jq -nc --arg u "$user" --arg p "$pass" --arg e "$days" '{status:"success",username:$u,password:$p,expired:$e}'

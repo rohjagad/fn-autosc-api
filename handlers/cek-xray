@@ -1,0 +1,11 @@
+#!/bin/bash
+# FN-API: online/traffic readout, per transport (text body, as the panel prints it).
+. /usr/local/lib/fn-api/lib.sh
+out=""
+for t in ws http split grpc; do
+  [ -x "/usr/bin/cek-xray-${t}" ] || continue
+  out="${out}
+[${t}]
+$(TERM=xterm /usr/bin/cek-xray-${t} </dev/null 2>&1 | strip_ansi)"
+done
+jq -nc --arg t "$out" '{status:"success",text:$t}'

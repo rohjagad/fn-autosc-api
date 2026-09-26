@@ -1,0 +1,4 @@
+#!/bin/bash
+# FN-API: endpoint with no backend on this panel.
+. /usr/local/lib/fn-api/lib.sh
+fail "unsupported endpoint '/$(basename "$0")': this panel serves SSH, Xray (VMess/VLESS/Trojan), NoobzVPN, WireGuard and L2TP - neither reference version shipped Shadowsocks or Socks5 either"

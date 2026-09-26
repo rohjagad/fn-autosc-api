@@ -1,0 +1,7 @@
+#!/bin/bash
+# FN-API: delete an SSH account. Body: {"username":"alice"}
+. /usr/local/lib/fn-api/lib.sh
+user="$(need username)"
+printf '%s\n' "$user" | TERM=xterm /usr/bin/delete-ssh >/dev/null 2>&1
+getent passwd "$user" >/dev/null 2>&1 && fail "account '${user}' still exists"
+ok "deleted ${user}"

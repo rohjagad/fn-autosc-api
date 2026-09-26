@@ -1,0 +1,4 @@
+#!/bin/bash
+# FN-API: health check.
+. /usr/local/lib/fn-api/lib.sh
+jq -nc --arg h "$(hostname)" '{status:"success",message:"FN-API is running",host:$h}'

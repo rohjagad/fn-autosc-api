@@ -1,0 +1,25 @@
+#!/bin/bash
+# FN-API: create an Xray account.
+# Body: {"username":"alice","core":"ws|http|split|grpc","expired":30,"limit-ip":2,"quota":5}
+# The protocol comes from the handler name (add-vmess / add-vless / add-trojan).
+. /usr/local/lib/fn-api/lib.sh
+proto="${0##*/add-}"
+[ "$1" = "--proto" ] && proto="${2:-}"
+
+user="$(need username)"
+core="$(field core ws)"
+days="$(field expired 30)"
+ip="$(field limit-ip 1)"
+quota="$(field quota 1)"
+
+script="/usr/bin/add-${proto}-${core}"
+[ -x "$script" ] || fail "unsupported core '${core}' for ${proto} (use ws, http, split or grpc)"
+
+out="$(printf '%s\n%s\n%s\n%s\n\n' "$user" "$ip" "$quota" "$days" | "$script" 2>&1 | strip_ansi)"
+grep -qE "^### ${user}( |$)" /etc/xray/json/*.json 2>/dev/null || fail "the panel did not create '${user}'"
+
+exp="$(grep -hoE "^### ${user} [0-9-]+" /etc/xray/json/*.json 2>/dev/null | awk '{print $3}' | head -1)"
+links="$(printf '%s' "$out" | grep -oE '(vmess|vless|trojan)://[^[:space:]]+')"
+jq -nc --arg u "$user" --arg p "$proto" --arg c "$core" --arg e "$exp" \
+       --argjson l "$(json_array "$links")" \
+  '{status:"success",username:$u,protocol:$p,core:$c,expired:$e,links:$l}'

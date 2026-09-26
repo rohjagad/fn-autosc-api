@@ -1,0 +1,18 @@
+#!/bin/bash
+# FN-API: delete an Xray account from every transport that holds it.
+# Body: {"username":"alice"}
+. /usr/local/lib/fn-api/lib.sh
+user="$(need username)"
+found=""
+for t in ws upgrade split grpc; do
+  grep -qE "^### ${user}( |$)" "/etc/xray/json/${t}.json" 2>/dev/null || continue
+  case $t in
+    ws)      printf '%s\n' "$user" | /usr/bin/delete-ws    >/dev/null 2>&1 ;;
+    upgrade) printf '%s\n' "$user" | /usr/bin/delete-http  >/dev/null 2>&1 ;;
+    split)   printf '%s\n' "$user" | /usr/bin/delete-split >/dev/null 2>&1 ;;
+    grpc)    printf '%s\n' "$user" | /usr/bin/delete-grpc  >/dev/null 2>&1 ;;
+  esac
+  found="$found $t"
+done
+[ -n "$found" ] || fail "no such account: ${user}"
+jq -nc --arg u "$user" --arg t "${found# }" '{status:"success",username:$u,deleted_from:($t|split(" "))}'

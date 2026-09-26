@@ -1,0 +1,13 @@
+#!/bin/bash
+# FN-API: create an SSH account.
+# Body: {"username":"alice","password":"pw","expired":30,"limit-ip":2}
+. /usr/local/lib/fn-api/lib.sh
+user="$(need username)"
+pass="$(need password)"
+ip="$(field limit-ip 1)"
+days="$(field expired 30)"
+out="$(printf '%s\n%s\n%s\n%s\n' "$user" "$pass" "$ip" "$days" | /usr/bin/addssh 2>&1 | strip_ansi)"
+getent passwd "$user" >/dev/null 2>&1 || fail "the panel did not create '${user}'"
+exp="$(chage -l "$user" 2>/dev/null | awk -F': ' '/Account expires/{print $2}')"
+jq -nc --arg u "$user" --arg p "$pass" --arg e "$exp" --arg t "$out" \
+  '{status:"success",username:$u,password:$p,expired:$e,text:$t}'

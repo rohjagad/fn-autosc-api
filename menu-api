@@ -1,0 +1,142 @@
+#!/bin/bash
+# FN AutoSC - FN-API installer / menu.
+#
+# The panel's nginx config already proxies /api/ to 127.0.0.1:9000. This installs
+# what answers there: the FN-API server (from the operator's FN-API repo) plus the
+# endpoint handlers in /usr/bin/rere/ that wrap the panel's own scripts.
+#
+# Usage:  menu-api            (interactive menu)
+#         menu-api install    uninstall | status | token
+#
+hosting="https://raw.githubusercontent.com/rohjagad/fn-autosc-api/main"
+api_repo="https://raw.githubusercontent.com/rohjagad/FN-API/main"
+HANDLERS="ping add-xray add-vmess add-vless add-trojan addssh add-noobz delete-xray delete-ssh delete-noobz list-xray list-ssh list-noobz cek-xray cek-ssh unsupported"
+KEY=/etc/xray/.key
+UNIT=/etc/systemd/system/api.service
+
+red='\033[0;31m'; green='\033[0;32m'; purple='\033[1;35m'; orange='\033[38;5;208m'; NC='\033[0m'
+
+token() { head -c 32 /dev/urandom | base64 | tr -d '/+=\n' | head -c 40; }
+
+gate() {
+    local PERMISSION_URL="https://raw.githubusercontent.com/rohjagad/fn-autosc-auth/main/izin.txt"
+    local LOCAL_IP PERMISSION_DATA MATCH EXPIRED_DATE REMAINING_DAYS USERNAME PERMISSION_IP
+    LOCAL_IP=$(curl -4 -s ifconfig.me)
+    PERMISSION_DATA=$(curl -s "$PERMISSION_URL") || { echo "Failed to download permissions."; exit 1; }
+    MATCH=$(printf '%s' "$PERMISSION_DATA" | grep '###' | grep "$LOCAL_IP")
+    [ -n "$MATCH" ] || { echo "Your IP is not in the database"; exit 1; }
+    USERNAME=$(printf '%s' "$MATCH" | awk '{print $2}')
+    PERMISSION_IP=$(printf '%s' "$MATCH" | awk '{print $3}')
+    EXPIRED_DATE=$(printf '%s' "$MATCH" | awk '{print $4}')
+    REMAINING_DAYS=$(( ($(date -d "$EXPIRED_DATE" +%s) - $(date +%s)) / 86400 ))
+    [ "$REMAINING_DAYS" -lt 0 ] && { echo "Authorization has expired."; exit 1; }
+    echo "Username: $USERNAME"; echo "IPv4: $PERMISSION_IP"; echo "Expired: $EXPIRED_DATE ( $REMAINING_DAYS Days )"
+}
+
+install_api() {
+    command -v python3 >/dev/null || apt-get install -y -qq python3
+    command -v jq      >/dev/null || apt-get install -y -qq jq
+    command -v curl    >/dev/null || apt-get install -y -qq curl
+    echo "  fetching the API server..."
+    curl -fsSL -o /usr/bin/api-server "$api_repo/core/server" || { echo "  FAILED to fetch core/server"; return 1; }
+    # bind loopback - nginx is the only thing that should reach it
+    sed -i "s/('', port)/('127.0.0.1', port)/" /usr/bin/api-server
+    chmod +x /usr/bin/api-server
+
+    mkdir -p /usr/local/lib/fn-api /usr/bin/rere /etc/xray
+    curl -fsSL -o /usr/local/lib/fn-api/lib.sh "$hosting/api/lib.sh" || { echo "  FAILED to fetch api/lib.sh"; return 1; }
+    chmod +x /usr/local/lib/fn-api/lib.sh
+    for h in $HANDLERS; do
+        curl -fsSL -o "/usr/bin/rere/$h" "$hosting/api/handlers/$h" && chmod +x "/usr/bin/rere/$h"
+    done
+    ln -sf unsupported /usr/bin/rere/add-ss
+    ln -sf unsupported /usr/bin/rere/add-socks
+
+    [ -s "$KEY" ] || token > "$KEY"
+    chmod 600 "$KEY"
+
+    cat > "$UNIT" <<'UNITEOF'
+[Unit]
+Description=FN AutoSC panel HTTP API (FN-API)
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /usr/bin/api-server
+Restart=always
+User=root
+
+[Install]
+WantedBy=multi-user.target
+UNITEOF
+    systemctl daemon-reload
+    systemctl enable api >/dev/null 2>&1
+    systemctl restart api
+    sleep 2
+    echo "  service : $(systemctl is-active api)   listening on 9000: $(ss -ltn | grep -c ':9000')"
+    echo "  handlers: $(ls /usr/bin/rere | tr '\n' ' ')"
+    echo "  token   : $(cat "$KEY")"
+    echo "  endpoint: https://$(cat /etc/xray/domain 2>/dev/null || echo '<domain>')/api/ping"
+}
+
+uninstall_api() {
+    systemctl stop api >/dev/null 2>&1
+    systemctl disable api >/dev/null 2>&1
+    rm -f "$UNIT" /usr/bin/api-server
+    rm -rf /usr/bin/rere /usr/local/lib/fn-api
+    systemctl daemon-reload
+    echo "  uninstalled (the token stays in $KEY)"
+}
+
+status_api() {
+    echo "  service : $(systemctl is-active api 2>/dev/null)"
+    echo "  listen  : $(ss -ltn 2>/dev/null | awk '$4 ~ /:9000$/ {print $4}' | tr '\n' ' ')"
+    echo "  handlers: $(ls /usr/bin/rere 2>/dev/null | wc -l) in /usr/bin/rere"
+    echo "  token   : $(cut -c1-6 "$KEY" 2>/dev/null)***"
+    echo "  endpoints (POST unless noted):"
+    echo "    /api/addssh /api/add-vmess /api/add-vless /api/add-trojan /api/add-noobz"
+    echo "    /api/list-xray (GET) /api/list-ssh (GET) /api/list-noobz (GET)"
+    echo "    /api/cek-xray (GET) /api/cek-ssh (GET) /api/ping (GET)"
+    echo "    /api/delete-xray /api/delete-ssh /api/delete-noobz (DELETE)"
+}
+
+rotate_token() {
+    token > "$KEY"; chmod 600 "$KEY"
+    systemctl restart api >/dev/null 2>&1
+    echo "  new token: $(cat "$KEY")"
+}
+
+menu() {
+    while true; do
+        clear
+        echo -e "${purple}===================================${NC}"
+        echo -e "${purple}            FN-API MENU            ${NC}"
+        echo -e "${purple}===================================${NC}"
+        echo -e " Service : $(systemctl is-active api 2>/dev/null)   Port 9000 : $(ss -ltn 2>/dev/null | grep -c ':9000')"
+        echo -e " Handlers: $(ls /usr/bin/rere 2>/dev/null | wc -l)"
+        echo -e "-----------------------------------"
+        echo -e "${green}1${NC}. Install / update the API"
+        echo -e "${green}2${NC}. Uninstall the API"
+        echo -e "${green}3${NC}. Status and endpoint list"
+        echo -e "${green}4${NC}. Show / regenerate the API token"
+        echo -e "${green}0${NC}. Exit"
+        echo -e "${purple}===================================${NC}"
+        read -p "Input option: " op
+        case $op in
+            1) gate; install_api; read -p "Enter to continue... " _ ;;
+            2) gate; uninstall_api; read -p "Enter to continue... " _ ;;
+            3) gate; status_api; read -p "Enter to continue... " _ ;;
+            4) gate; rotate_token; read -p "Enter to continue... " _ ;;
+            0) exit 0 ;;
+            *) ;;
+        esac
+    done
+}
+
+case "${1:-}" in
+    install)   gate; install_api ;;
+    uninstall) gate; uninstall_api ;;
+    status)    gate; status_api ;;
+    token)     gate; rotate_token ;;
+    *)         menu ;;
+esac

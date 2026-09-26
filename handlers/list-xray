@@ -1,0 +1,8 @@
+#!/bin/bash
+# FN-API: list every Xray account, with its transport and expiry.
+. /usr/local/lib/fn-api/lib.sh
+{
+  for t in ws upgrade split grpc; do
+    grep -E '^### ' "/etc/xray/json/${t}.json" 2>/dev/null | awk -v t="$t" '{print $2" "$3" "t}'
+  done
+} | jq -R -s 'split("\n") | map(select(length>0) | split(" ") | {username:.[0],expired:.[1],transport:.[2]}) | {status:"success",count:length,accounts:.}'

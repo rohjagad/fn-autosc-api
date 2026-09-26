@@ -1,0 +1,10 @@
+#!/bin/bash
+# FN-API: delete a NoobzVPN account. Body: {"username":"alice"}
+. /usr/local/lib/fn-api/lib.sh
+user="$(need username)"
+if noobzvpns remove --help >/dev/null 2>&1; then
+  noobzvpns remove "$user" >/dev/null 2>&1
+else
+  noobzvpns --remove-user "$user" >/dev/null 2>&1
+fi
+ok "deleted ${user}"

@@ -1,0 +1,5 @@
+#!/bin/bash
+# FN-API: list SSH accounts (text body, as the panel prints it).
+. /usr/local/lib/fn-api/lib.sh
+out="$(TERM=xterm /usr/bin/list-ssh </dev/null 2>&1 | strip_ansi)"
+jq -nc --arg t "$out" '{status:"success",text:$t}'
