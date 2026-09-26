@@ -2,17 +2,28 @@
 # FN-API: delete an Xray account from every transport that holds it.
 # Body: {"username":"alice"}
 . /usr/local/lib/fn-api/lib.sh
-user="$(need username)"
-found=""
+require username user
+
+seen=""
+deleted=""
 for t in ws upgrade split grpc; do
-  grep -qE "^### ${user}( |$)" "/etc/xray/json/${t}.json" 2>/dev/null || continue
-  case $t in
-    ws)      printf '%s\n' "$user" | /usr/bin/delete-ws    >/dev/null 2>&1 ;;
-    upgrade) printf '%s\n' "$user" | /usr/bin/delete-http  >/dev/null 2>&1 ;;
-    split)   printf '%s\n' "$user" | /usr/bin/delete-split >/dev/null 2>&1 ;;
-    grpc)    printf '%s\n' "$user" | /usr/bin/delete-grpc  >/dev/null 2>&1 ;;
-  esac
-  found="$found $t"
+    json="/etc/xray/json/${t}.json"
+    core="$t"
+    [ "$t" = upgrade ] && core="http"          # the name the create endpoints accept
+    grep -qE "^### ${user}( |$)" "$json" 2>/dev/null || continue
+    seen="$seen $core"
+    case $t in
+        ws)      printf '%s\n' "$user" | /usr/bin/delete-ws    >/dev/null 2>&1 ;;
+        upgrade) printf '%s\n' "$user" | /usr/bin/delete-http  >/dev/null 2>&1 ;;
+        split)   printf '%s\n' "$user" | /usr/bin/delete-split >/dev/null 2>&1 ;;
+        grpc)    printf '%s\n' "$user" | /usr/bin/delete-grpc  >/dev/null 2>&1 ;;
+    esac
+    # Verify, like add-xray and delete-ssh do; a delete script that failed must
+    # not be reported as a successful removal.
+    grep -qE "^### ${user}( |$)" "$json" 2>/dev/null && continue
+    deleted="$deleted $core"
 done
-[ -n "$found" ] || fail "no such account: ${user}"
-jq -nc --arg u "$user" --arg t "${found# }" '{status:"success",username:$u,deleted_from:($t|split(" "))}'
+
+[ -n "$seen" ] || fail "no such account: ${user}"
+[ -n "$deleted" ] || fail "failed to delete '${user}' from:${seen}"
+jq -nc --arg u "$user" --arg t "${deleted# }" '{status:"success",username:$u,deleted_from:($t|split(" "))}'

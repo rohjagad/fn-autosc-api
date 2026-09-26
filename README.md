@@ -58,7 +58,15 @@ Request body is a JSON object on stdin; the response is a JSON object on stdout.
 | `delete-xray` | DELETE | `username` | `delete-ws/http/split/grpc`, for every transport that holds it |
 | `delete-ssh` | DELETE | `username` | `delete-ssh` |
 | `delete-noobz` | DELETE | `username` | `noobzvpns remove` |
+| `renew-xray` | PUT/POST | `username`, `days`, `core` (default `ws`) | `extend-<core>` - keeps the account's usage |
+| `renew-ssh` | PUT/POST | `username`, `days` | `extend-ssh` |
+| `password-ssh` | PUT/POST | `username`, `password` | `pwd-ssh` - also rewrites the account card |
 | `add-ss`, `add-socks` | - | - | error JSON: no Shadowsocks/Socks5 backend exists (nor in either reference version) |
+
+The transport is named the same everywhere: `core` accepts `ws`, `http`, `split` or `grpc`, and
+`list-xray` / `delete-xray` report it back under those names (the panel's own `upgrade` name for the
+HTTPUpgrade transport is not exposed). Every handler verifies the panel actually did the work and
+answers `{"status":"error",...}` when it did not - a `success` means the change is in the config.
 
 Example:
 
@@ -77,6 +85,23 @@ curl -sk -H 'Authorization: <token>' -H 'Content-Type: application/json' \
 Every endpoint the panel can serve is implemented. Only `add-ss` and `add-socks` cannot work,
 because the panel - and both reference versions of the autoscript - have no Shadowsocks or Socks5
 account type at all; they return a clear error instead.
+
+Two notes on the panel's own limits, which the endpoints inherit:
+
+- `renew-ssh` and `password-ssh` drive tools the lite edition does not ship; on lite they answer
+  `{"status":"error","message":"this panel edition does not ship 'extend-ssh'"}` rather than
+  pretending to have worked.
+- `password-ssh` uses the panel's `pwd-ssh`, which reads the new password with Go's `Scanln` and so
+  stops at the first space. A password containing whitespace is rejected rather than silently
+  truncated.
+
+## Response shape
+
+A handler always answers HTTP 200 with `{"status":"success",...}` or
+`{"status":"error","message":"..."}`; a non-zero handler exit (a crash) is HTTP 500 with
+`{"error":...,"stdout":...}`. The original reference README described `{"ok":true}` /
+`{"ok":false,"description":...}` for a handler bundle that no longer exists; this layer uses one
+consistent shape instead of two (see `project-information/is-decision.md` in `fn-autosc`).
 
 ## Security
 

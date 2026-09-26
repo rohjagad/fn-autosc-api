@@ -1,0 +1,17 @@
+#!/bin/bash
+# FN-API: extend an SSH account's expiry. Body: {"username":"alice","days":30}
+. /usr/local/lib/fn-api/lib.sh
+require_tool extend-ssh
+require username user
+days="$(field days 30)"
+
+getent passwd "$user" >/dev/null 2>&1 || fail "no such account: ${user}"
+
+expiry() { chage -l "$user" 2>/dev/null | awk -F': ' '/Account expires/{print $2}' | xargs; }
+before="$(expiry)"
+printf '%s\n%s\n' "$user" "$days" | /usr/bin/extend-ssh >/dev/null 2>&1
+after="$(expiry)"
+[ "$after" != "$before" ] || fail "the panel did not extend '${user}'"
+
+jq -nc --arg u "$user" --arg b "$before" --arg e "$after" \
+  '{status:"success",username:$u,previous_expired:$b,expired:$e}'

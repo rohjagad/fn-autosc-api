@@ -1,5 +1,6 @@
 #!/bin/bash
 # FN-API: list NoobzVPN accounts (text body, as noobzvpns prints it).
 . /usr/local/lib/fn-api/lib.sh
-out="$(noobzvpns print-all 2>/dev/null || noobzvpns --info-all-user 2>/dev/null)"
+require_tool noobzvpns
+out="$(noobz_accounts)"
 jq -nc --arg t "$out" '{status:"success",text:$t}'

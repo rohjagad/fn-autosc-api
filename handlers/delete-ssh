@@ -1,7 +1,13 @@
 #!/bin/bash
 # FN-API: delete an SSH account. Body: {"username":"alice"}
 . /usr/local/lib/fn-api/lib.sh
-user="$(need username)"
+require_tool delete-ssh
+require username user
+
+# Fail on a name that does not exist, like delete-xray, instead of reporting a
+# successful deletion of nothing.
+getent passwd "$user" >/dev/null 2>&1 || fail "no such account: ${user}"
+
 printf '%s\n' "$user" | TERM=xterm /usr/bin/delete-ssh >/dev/null 2>&1
 getent passwd "$user" >/dev/null 2>&1 && fail "account '${user}' still exists"
 ok "deleted ${user}"

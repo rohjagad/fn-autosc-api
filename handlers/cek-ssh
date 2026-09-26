@@ -1,5 +1,6 @@
 #!/bin/bash
 # FN-API: SSH login/IP readout (text body, as the panel prints it).
 . /usr/local/lib/fn-api/lib.sh
+require_tool cek-login-ssh
 out="$(TERM=xterm /usr/bin/cek-login-ssh </dev/null 2>&1 | strip_ansi)"
 jq -nc --arg t "$out" '{status:"success",text:$t}'

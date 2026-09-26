@@ -2,12 +2,22 @@
 # FN-API: create an SSH account.
 # Body: {"username":"alice","password":"pw","expired":30,"limit-ip":2}
 . /usr/local/lib/fn-api/lib.sh
-user="$(need username)"
-pass="$(need password)"
+require_tool addssh
+require username user
+require password pass
 ip="$(field limit-ip 1)"
 days="$(field expired 30)"
+
+# The panel does not validate the name; keep it to characters useradd and the
+# panel's own file paths can carry.
+[[ "$user" =~ ^[A-Za-z0-9_.-]+$ ]] || \
+    fail "invalid username '${user}': letters, numbers, dot, dash and underscore only"
+
+# The panel prompts username, password, limit-ip, expired (days).
 out="$(printf '%s\n%s\n%s\n%s\n' "$user" "$pass" "$ip" "$days" | /usr/bin/addssh 2>&1 | strip_ansi)"
-getent passwd "$user" >/dev/null 2>&1 || fail "the panel did not create '${user}'"
+getent passwd "$user" >/dev/null 2>&1 || \
+    fail "the panel did not create '${user}'$(panel_reason "$out" | sed 's/^/: /')"
+
 exp="$(chage -l "$user" 2>/dev/null | awk -F': ' '/Account expires/{print $2}')"
 jq -nc --arg u "$user" --arg p "$pass" --arg e "$exp" --arg t "$out" \
   '{status:"success",username:$u,password:$p,expired:$e,text:$t}'

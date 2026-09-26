@@ -9,7 +9,7 @@
 #         menu-api install    uninstall | status | token
 #
 hosting="https://raw.githubusercontent.com/rohjagad/fn-autosc-api/main"
-HANDLERS="ping add-xray add-vmess add-vless add-trojan addssh add-noobz delete-xray delete-ssh delete-noobz list-xray list-ssh list-noobz cek-xray cek-ssh unsupported"
+HANDLERS="ping add-xray add-vmess add-vless add-trojan addssh add-noobz delete-xray delete-ssh delete-noobz list-xray list-ssh list-noobz cek-xray cek-ssh renew-xray renew-ssh password-ssh unsupported"
 KEY=/etc/xray/.key
 UNIT=/etc/systemd/system/api.service
 
@@ -44,7 +44,8 @@ install_api() {
     curl -fsSL -o /usr/local/lib/fn-api/lib.sh "$hosting/lib.sh" || { echo "  FAILED to fetch lib.sh"; return 1; }
     chmod +x /usr/local/lib/fn-api/lib.sh
     for h in $HANDLERS; do
-        curl -fsSL -o "/usr/bin/rere/$h" "$hosting/handlers/$h" && chmod +x "/usr/bin/rere/$h"
+        curl -fsSL -o "/usr/bin/rere/$h" "$hosting/handlers/$h" || { echo "  FAILED to fetch handlers/$h"; return 1; }
+        chmod +x "/usr/bin/rere/$h"
     done
     ln -sf unsupported /usr/bin/rere/add-ss
     ln -sf unsupported /usr/bin/rere/add-socks
@@ -74,6 +75,7 @@ UNITEOF
     echo "  handlers: $(ls /usr/bin/rere | tr '\n' ' ')"
     echo "  token   : $(cat "$KEY")"
     echo "  endpoint: https://$(cat /etc/xray/domain 2>/dev/null || echo '<domain>')/api/ping"
+    systemctl is-active --quiet api || echo "  WARNING: api.service is not active - check: journalctl -u api"
 }
 
 uninstall_api() {
@@ -95,6 +97,8 @@ status_api() {
     echo "    /api/list-xray (GET) /api/list-ssh (GET) /api/list-noobz (GET)"
     echo "    /api/cek-xray (GET) /api/cek-ssh (GET) /api/ping (GET)"
     echo "    /api/delete-xray /api/delete-ssh /api/delete-noobz (DELETE)"
+    echo "    /api/renew-xray /api/renew-ssh /api/password-ssh (PUT/POST)"
+    echo "    /api/add-ss /api/add-socks (explicit error: no backend on this panel)"
 }
 
 rotate_token() {
