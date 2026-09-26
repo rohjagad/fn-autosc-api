@@ -23,6 +23,14 @@ original endpoint list; nothing here fetches or depends on it.
 
 ## Install
 
+> **If you have just pushed to this repo**, `raw.githubusercontent.com` can serve a stale copy of a
+> changed file for a few minutes (a query string does not bust it). If `menu-api install` reports a
+> `FAILED to fetch ...`, fetch the **commit-pinned** URL instead -
+> `https://raw.githubusercontent.com/rohjagad/fn-autosc-api/<commit>/menu-api` - or the jsDelivr
+> mirror `https://cdn.jsdelivr.net/gh/rohjagad/fn-autosc-api@main/menu-api`. In normal use the plain
+> `main` URL is correct.
+
+
 ```
 wget -O /usr/bin/menu-api https://raw.githubusercontent.com/rohjagad/fn-autosc-api/main/menu-api
 chmod +x /usr/bin/menu-api
