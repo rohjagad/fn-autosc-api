@@ -27,9 +27,23 @@ gate() {
     USERNAME=$(printf '%s' "$MATCH" | awk '{print $2}')
     PERMISSION_IP=$(printf '%s' "$MATCH" | awk '{print $3}')
     EXPIRED_DATE=$(printf '%s' "$MATCH" | awk '{print $4}')
-    REMAINING_DAYS=$(( ($(date -d "$EXPIRED_DATE" +%s) - $(date +%s)) / 86400 ))
-    [ "$REMAINING_DAYS" -lt 0 ] && { echo "Authorization has expired."; exit 1; }
-    echo "Username: $USERNAME"; echo "IPv4: $PERMISSION_IP"; echo "Expired: $EXPIRED_DATE ( $REMAINING_DAYS Days )"
+    # A "lifetime" entry means auth is off: the expiry check is skipped
+    # (is-decision.md 28). This gate also runs during installation, so a
+    # lifetime machine installs without a date.
+    if [ "$EXPIRED_DATE" = "lifetime" ]; then
+        REMAINING_DAYS="lifetime"
+    else
+        REMAINING_DAYS=$(( ($(date -d "$EXPIRED_DATE" +%s) - $(date +%s)) / 86400 ))
+    fi
+    if [ "$REMAINING_DAYS" != "lifetime" ] && [ "$REMAINING_DAYS" -lt 0 ]; then
+        echo "Authorization has expired."
+        exit 1
+    fi
+    if [ "$REMAINING_DAYS" = "lifetime" ]; then
+        echo "Username: $USERNAME"; echo "IPv4: $PERMISSION_IP"; echo "Expired: lifetime"
+    else
+        echo "Username: $USERNAME"; echo "IPv4: $PERMISSION_IP"; echo "Expired: $EXPIRED_DATE ( $REMAINING_DAYS Days )"
+    fi
 }
 
 install_api() {
