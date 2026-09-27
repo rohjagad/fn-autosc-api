@@ -59,4 +59,4 @@ json_array()  { printf '%s' "$1" | jq -R -s 'split("\n") | map(select(length>0))
 # why instead of only that it did not happen. The explanation is at the end of
 # the output (the prompts and the authorization banner come first), so keep the
 # tail.
-panel_reason() { printf '%s' "$1" | tr '\n' ' ' | tr -s ' ' | sed 's/^ //;s/ $//' | tail -c 300; }
+panel_reason() { printf '%s' "$1" | strip_ansi | tr '\n' ' ' | tr -s ' ' | sed 's/^ //;s/ $//' | tail -c 300; }
