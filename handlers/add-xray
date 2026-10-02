@@ -23,8 +23,16 @@ script="/usr/bin/add-${proto}-${core}"
 
 # Fail fast on duplicates: the panel refuses a taken name, but the
 # verify-grep below would then match the pre-existing entry and report
-# success for a change that never happened.
-grep -qE "^### ${esc}( |$)" /etc/xray/json/*.json 2>/dev/null && \
+# success for a change that never happened. Scope to the target transport
+# only - the panel allows the same name on other transports (and delete-xray
+# relies on that), so a global check would be over-strict.
+case "$core" in
+    ws)    dupjson=/etc/xray/json/ws.json ;;
+    http)  dupjson=/etc/xray/json/upgrade.json ;;
+    split) dupjson=/etc/xray/json/split.json ;;
+    grpc)  dupjson=/etc/xray/json/grpc.json ;;
+esac
+grep -qE "^### ${esc}( |$)" "$dupjson" 2>/dev/null && \
     fail "username '${user}' already exists"
 
 # The panel validates the username itself and re-prompts; it needs exactly the
