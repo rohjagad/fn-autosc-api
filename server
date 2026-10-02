@@ -121,6 +121,19 @@ class Handler(BaseHTTPRequestHandler):
         except subprocess.TimeoutExpired:
             self._send(500, json.dumps({"error": "handler timed out"}).encode())
             logging.error("handler timed out: %s", script)
+        except OSError as exc:
+            # The file passed isfile() but cannot be executed (e.g. a deployed
+            # handler lost its +x bit, or it vanished between the check and the
+            # exec). Without this the exception escapes do_GET, the connection
+            # dies with an empty reply, and the client cannot tell a broken
+            # handler from a dead server. The server itself survives either way.
+            payload = json.dumps({"error": "cannot execute handler: %s" % exc})
+            try:
+                self._send(500, payload.encode())
+            except (BrokenPipeError, ConnectionResetError):
+                pass
+            self._info("handler not executable: %s" % script)
+            logging.error("handler not executable: %s: %s", script, exc)
 
     # ---- methods ---------------------------------------------------------
     def do_OPTIONS(self):
