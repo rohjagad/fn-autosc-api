@@ -6,6 +6,10 @@ require username user
 require password pass
 days="$(field expired 30)"
 
+# Fail fast on duplicates: noobz_accounts below would match the pre-existing
+# entry and claim success for a no-op.
+noobz_accounts | grep -qF "$user" && fail "username '${user}' already exists"
+
 if noobzvpns add --help >/dev/null 2>&1; then
     noobzvpns add --password "$pass" --expired "$days" "$user" >/dev/null 2>&1
 else

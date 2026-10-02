@@ -13,6 +13,10 @@ days="$(field expired 30)"
 [[ "$user" =~ ^[A-Za-z0-9_.-]+$ ]] || \
     fail "invalid username '${user}': letters, numbers, dot, dash and underscore only"
 
+# Fail fast on duplicates (same reason as add-xray): the verify below would
+# match the pre-existing account and claim success for a no-op.
+getent passwd "$user" >/dev/null 2>&1 && fail "username '${user}' already exists"
+
 # The panel prompts username, password, limit-ip, expired (days).
 out="$(printf '%s\n%s\n%s\n%s\n' "$user" "$pass" "$ip" "$days" | /usr/bin/addssh 2>&1 | strip_ansi)"
 getent passwd "$user" >/dev/null 2>&1 || \

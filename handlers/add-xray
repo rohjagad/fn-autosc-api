@@ -21,6 +21,12 @@ quota="$(field quota 1)"
 script="/usr/bin/add-${proto}-${core}"
 [ -x "$script" ] || fail "unsupported core '${core}' for ${proto} (use ws, http, split or grpc)"
 
+# Fail fast on duplicates: the panel refuses a taken name, but the
+# verify-grep below would then match the pre-existing entry and report
+# success for a change that never happened.
+grep -qE "^### ${esc}( |$)" /etc/xray/json/*.json 2>/dev/null && \
+    fail "username '${user}' already exists"
+
 # The panel validates the username itself and re-prompts; it needs exactly the
 # five answers its prompts expect (username, limit-ip, quota, days, uuid).
 out="$(printf '%s\n%s\n%s\n%s\n\n' "$user" "$ip" "$quota" "$days" | "$script" 2>&1 | strip_ansi)"
