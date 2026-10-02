@@ -138,7 +138,7 @@ menu() {
         echo -e "${green}4${NC}. Show / regenerate the API token"
         echo -e "${green}0${NC}. Exit"
         echo -e "${purple}===================================${NC}"
-        read -p "Input option: " op
+        read -p "Input option: " op || exit 0
         case $op in
             1) gate; install_api; read -p "Enter to continue... " _ ;;
             2) gate; uninstall_api; read -p "Enter to continue... " _ ;;
