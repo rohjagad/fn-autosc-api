@@ -91,6 +91,11 @@ Two notes on the panel's own limits, which the endpoints inherit:
 - `renew-ssh` and `password-ssh` drive tools the lite edition does not ship; on lite they answer
   `{"status":"error","message":"this panel edition does not ship 'extend-ssh'"}` rather than
   pretending to have worked.
+- Creating a username that already exists is refused with
+  `{"status":"error","message":"username '<name>' already exists"}` instead of reporting
+  success for a change that never happened. The check is per transport for Xray (the same
+  name may live on `ws` and `grpc` at once, and `delete-xray` spans them), global for SSH
+  system users and the NoobzVPN database.
 - `password-ssh` uses the panel's `pwd-ssh`, which reads the new password with Go's `Scanln` and so
   stops at the first space. A password containing whitespace is rejected rather than silently
   truncated.
@@ -102,6 +107,8 @@ A handler always answers HTTP 200 with `{"status":"success",...}` or
 `{"error":...,"stdout":...}`. The original reference README described `{"ok":true}` /
 `{"ok":false,"description":...}` for a handler bundle that no longer exists; this layer uses one
 consistent shape instead of two (see `project-information/is-decision.md` in `fn-autosc`).
+A handler file that cannot be executed (lost `+x`, dangling symlink target) answers the same
+HTTP 500 shape rather than dropping the connection.
 
 ## Security
 
