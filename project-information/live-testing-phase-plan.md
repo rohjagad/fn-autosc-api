@@ -213,12 +213,12 @@ Fase 18: Cleanup, uninstall & box-as-found
 
 ### Fase 15: Coalescing Restart Burst
 
-- **Tujuan:** Perbaikan bug-finding Fase 15 terbukti: burst tak membunuh transport.
+- **Tujuan:** Burst tak membunuh transport (pasca Found 329/330 `fn-autosc`: budget unit `120s/30`).
 - **Langkah Pengujian:**
   1. Baseline: `ActiveEnterTimestamp` + hitung `Stopping xray@ws` di journal (0).
   2. Burst 6 add + 6 delete paralel (12 panggilan).
-  3. Harapan pasca-fix: semua sukses terverifikasi + **tepat 1 restart per transport tersentuh** + service `active` tanpa `reset-failed` manual.
-  4. Kriteria gagal (bug baru): >1 restart per transport, `start-limit-hit`, atau sukses tanpa entri config.
+  3. Harapan: semua sukses terverifikasi + service tetap `active` **tanpa `reset-failed` manual** (restart tetap N-per-N karena skrip panel memilikinya; yang dijamin adalah budget unit menahannya, bukan 1-restart-per-batch).
+  4. Kriteria gagal (bug baru): `start-limit-hit`, klaim sukses tanpa entri config, atau failed unit.
   5. Bersihkan semua akun uji.
 
 ### Fase 16: Timeout & Body Malformed
