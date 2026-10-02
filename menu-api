@@ -20,8 +20,9 @@ token() { head -c 32 /dev/urandom | base64 | tr -d '/+=\n' | head -c 40; }
 gate() {
     local PERMISSION_URL="https://raw.githubusercontent.com/rohjagad/fn-autosc-auth/main/izin.txt"
     local LOCAL_IP PERMISSION_DATA MATCH EXPIRED_DATE REMAINING_DAYS USERNAME PERMISSION_IP
-    LOCAL_IP=$(curl -4 -s ifconfig.me)
-    PERMISSION_DATA=$(curl -s "$PERMISSION_URL") || { echo "Failed to download permissions."; exit 1; }
+    LOCAL_IP=$(curl -4 -s --max-time 15 ifconfig.me)
+    [ -n "$LOCAL_IP" ] || { echo "Could not determine public IPv4 (check network/DNS)."; exit 1; }
+    PERMISSION_DATA=$(curl -s --max-time 15 "$PERMISSION_URL") || { echo "Failed to download permissions."; exit 1; }
     MATCH=$(printf '%s' "$PERMISSION_DATA" | grep '###' | grep "$LOCAL_IP")
     [ -n "$MATCH" ] || { echo "Your IP is not in the database"; exit 1; }
     USERNAME=$(printf '%s' "$MATCH" | awk '{print $2}')
