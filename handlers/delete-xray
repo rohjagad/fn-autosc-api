@@ -27,4 +27,16 @@ done
 
 [ -n "$seen" ] || fail "no such account: ${user}"
 [ -n "$deleted" ] || fail "failed to delete '${user}' from:${seen}"
-jq -nc --arg u "$user" --arg t "${deleted# }" '{status:"success",username:$u,deleted_from:($t|split(" "))}'
+# Honest partial report: the account lived on transports that would not
+# delete. A caller that only reads "status" must still see it did not
+# fully go away.
+missing=""
+for c in $seen; do
+    case " $deleted " in *" $c "*) ;; *) missing="$missing $c";; esac
+done
+if [ -n "$missing" ]; then
+    jq -nc --arg u "$user" --arg t "${deleted# }" --arg m "${missing# }" \
+        '{status:"success",username:$u,deleted_from:($t|split(" ")),partial:true,failed_from:($m|split(" "))}'
+else
+    jq -nc --arg u "$user" --arg t "${deleted# }" '{status:"success",username:$u,deleted_from:($t|split(" "))}'
+fi

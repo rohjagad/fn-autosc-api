@@ -4,11 +4,11 @@
 require_tool noobzvpns
 require username user
 
-noobz_accounts | grep -qF "$user" || fail "no such account: ${user}"
+noobz_accounts | grep -qwF "$user" || fail "no such account: ${user}"
 if noobzvpns remove --help >/dev/null 2>&1; then
     noobzvpns remove "$user" >/dev/null 2>&1
 else
     noobzvpns --remove-user "$user" >/dev/null 2>&1
 fi
-noobz_accounts | grep -qF "$user" && fail "account '${user}' still exists"
+noobz_accounts | grep -qwF "$user" && fail "account '${user}' still exists"
 ok "deleted ${user}"

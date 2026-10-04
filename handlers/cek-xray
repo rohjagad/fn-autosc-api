@@ -1,9 +1,11 @@
 #!/bin/bash
 # FN-API: online/traffic readout, per transport (text body, as the panel prints it).
 . /usr/local/lib/fn-api/lib.sh
+for t in ws http xhttp grpc; do
+    require_tool "cek-xray-${t}"
+done
 out=""
 for t in ws http xhttp grpc; do
-  [ -x "/usr/bin/cek-xray-${t}" ] || continue
   out="${out}
 [${t}]
 $(TERM=xterm /usr/bin/cek-xray-${t} </dev/null 2>&1 | strip_ansi)"
