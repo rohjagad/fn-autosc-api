@@ -51,7 +51,7 @@ Setiap pengujian pada seluruh fase **WAJIB** merujuk dan mencocokkan hasil aktua
 
 ---
 
-## 3. Struktur 19 Fase Pengujian Live
+## 3. Struktur 22 Fase Pengujian Live
 
 ```
 Fase 1:  Lifecycle install/status/uninstall
@@ -91,6 +91,12 @@ Fase 17: Audit log & kebocoran rahasia
 Fase 18: Cleanup, uninstall & box-as-found
    │
 Fase 19: Fallback URL otorisasi (Pages + GitHub)
+   │
+Fase 20: Matriks tipe malformed per endpoint
+   │
+Fase 21: Slow-drip, body raksasa & backlog
+   │
+Fase 22: Kolisi Noobz & pelaporan hapus parsial
 ```
 
 ---
@@ -262,3 +268,30 @@ Fase 19: Fallback URL otorisasi (Pages + GitHub)
 - **Uji umum area gate (di luar fallback):**
   6. `menu-api install` di bawah network lambat: tiap fetch gagal-cepat (`FAILED to fetch ...`) tanpa menggantung; instalasi setengah jalan dilaporkan, bukan sukses.
   7. Respons HTML error sebagai `izin.txt`: gate menolak tanpa MATCH palsu dan tanpa mencetak isi respons.
+
+### Fase 20: Matriks Tipe Malformed per Endpoint
+
+- **Tujuan:** Koersi diam-diam `jq` tidak boleh menghasilkan kredensial salah-field.
+- **Langkah Pengujian:**
+  1. Untuk tiap endpoint tulis (`add-*`, `renew-*`, `password-*`): kirim `username` sebagai angka, array, nested object, string 10KB, dan string ber-newline; catat respons vs state nyata (dibuat/ditolak, nilai tersimpan vs dilaporkan).
+  2. Kirim `expired`/`limit-ip`/`quota`/`days` sebagai boolean/array/string non-angka: pastikan tidak menggeser posisi jawaban prompt panel.
+  3. Kriteria gagal: `success` atas input bergeser, password tersimpan beda dengan yang dilaporkan, atau akun ganda.
+  4. Bersihkan semua akun uji yang tercipta.
+
+### Fase 21: Slow-Drip, Body Raksasa & Backlog
+
+- **Tujuan:** Single thread bertahan dari klien nakal; batas antrean terdokumentasi jujur.
+- **Langkah Pengujian:**
+  1. Kirim body 1 byte/detik ke endpoint tulis terautentikasi: server tidak boleh hang selamanya untuk request berikut (catat perilaku aktual vs ekspektasi timeout).
+  2. Kirim `Content-Length` raksasa tanpa body dan body 10MB: tak ada OOM/hang; koneksi reusable.
+  3. Tembak >5 koneksi simultan: catat mana yang `ECONNREFUSED` vs antre; selaraskan dengan klaim antre README (perbaiki dokumen bila perlu, bukan sekadar kode).
+  4. Pastikan tidak ada akun/state berubah selama uji robustness ini.
+
+### Fase 22: Kolisi Noobz & Pelaporan Hapus Parsial
+
+- **Tujuan:** Pencocokan nama eksak dan kejujuran laporan hapus.
+- **Langkah Pengujian:**
+  1. Buat `livetest_ali1` dan `livetest_ali12`: hapus/cek satu-satu — tidak boleh ada false `already exists`, hapus-salah, atau sukses palsu.
+  2. Buat akun di 2 transport lalu gagalkan hapus salah satunya (simulasi: pindah sementara skrip `delete-http`): respons tidak boleh `success` penuh; harus mencerminkan transport yang tersisa.
+  3. `cek-xray` di VPS tanpa biner `cek-xray-http`: readout transport itu tidak boleh hilang diam-diam dalam status sukses.
+  4. Kembalikan semua biner yang dipindah sementara; bersihkan akun uji.

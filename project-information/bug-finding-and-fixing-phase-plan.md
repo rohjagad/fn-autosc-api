@@ -38,7 +38,7 @@ Setiap langkah dalam seluruh fase **WAJIB** membaca dan mengacu pada 7 sumber re
 
 ---
 
-## 3. Struktur 16 Fase Bug-Finding & Fixing
+## 3. Struktur 20 Fase Bug-Finding & Fixing
 
 ```
 Fase 1:  Server — matriks autentikasi & token
@@ -71,7 +71,15 @@ Fase 14: menu-api — unit systemd, token & uninstall
    │
 Fase 15: Restart fan-out — coalescing per batch
    │
-Fase 16: Gerbang regresi & sinkron docs
+Fase 16: Bentuk input handler — angka, newline & koersi jq
+   │
+Fase 17: Pencocokan eksak Noobz & pelaporan delete parsial
+   │
+Fase 18: Pengerasan soket server & logging aman
+   │
+Fase 19: Atomisitas installer & disiplin permukaan API
+   │
+Fase 20: Gerbang regresi & sinkron docs
 ```
 
 ---
@@ -281,7 +289,56 @@ Fase 16: Gerbang regresi & sinkron docs
 
 ---
 
-### Fase 16: Gerbang Regresi & Sinkron Docs
+### Fase 16: Bentuk Input Handler — Angka, Newline & Koersi jq
+
+- **Komponen Target:** semua handler yang memakai `field`/`j` (`add-xray`, `addssh`, `add-noobz`, `renew-*`, `password-ssh`).
+- **Finding:**
+  - Kirim `expired`/`limit-ip`/`quota`/`days` sebagai angka, boolean, array, nested, dan string ber-newline (`"30\nn\ny"`): nilai mentah masuk ke `printf | panel` dan menggeser posisi jawaban prompt.
+  - Kirim `username` numerik/array (`123`, `["admin"]`): koersi `jq -r` + `head -1` memotong tanpa peringatan; password ber-newline terpotong `head -1` sehingga yang tersimpan beda dengan yang dilaporkan (kecuali `password-ssh` yang menolak spasi).
+  - Bandingkan tiap pesan error dengan kontrak README; tidak ada `success` atas input yang bergeser.
+- **Fixing:**
+  - Validasi bentuk di handler (tolak tipe salah dengan pesan eksplisit) atau dokumentasikan koersi di kontrak; jangan biarkan prompt-shift diam-diam. Tanpa regex baru yang menolak input sah panel.
+
+---
+
+### Fase 17: Pencocokan Eksak Noobz & Pelaporan Delete Parsial
+
+- **Komponen Target:** `add-noobz`, `delete-noobz`, `list-noobz`, `delete-xray` (laporan `deleted_from`).
+- **Finding:**
+  - `grep -qF "$user"` tanpa jangkar: user `ali` vs `alice` — uji false `already exists`, false success, dan hapus-salah.
+  - `delete-xray` parsial (satu transport gagal): respons `success` + `deleted_from` terpotong membuat penelepon mengira hapus penuh.
+  - `cek-xray` memanggil `/usr/bin/cek-xray-http` padahal file panel bernama pola `upgrade`: bila biner tak ada, readout `http` hilang diam-diam dengan status sukses.
+- **Fixing:**
+  - Jangkar pencocokan Noobz seperti pola Xray (`^...$` eksak); hapus parsial dilaporkan jujur (bukan `success` penuh); `cek-xray` memakai `require_tool` per transport seperti handler baca lain.
+
+---
+
+### Fase 18: Pengerasan Soket Server & Logging Aman
+
+- **Komponen Target:** `server` (backlog, timeout soket, batas body, handler log, environment).
+- **Finding:**
+  - Backlog default (5) vs klaim README "concurrent calls queue": burst >5 mendapat `ECONNREFUSED`, bukan antre — ukur dan selaraskan angka/dokumen.
+  - `rfile.read(length)` tanpa batas + tanpa timeout soket: body lambat/raksasa dari klien terautentikasi memblokir single thread selamanya (hanya handler yang ber-timeout 180s).
+  - `logging.FileHandler` sekali-buka: rotasi log kehilangan catatan (pertimbangkan `WatchedFileHandler` bila murah); `os.environ` penuh diwariskan ke handler root; `BrokenPipe` hanya dijaga di satu cabang kirim.
+- **Fixing:**
+  - Batas eksplisit yang kecil dan terdokumentasi (backlog, ukuran body, timeout baca); jangan threading/greenlet — invarian single-threaded tidak boleh retak.
+
+---
+
+### Fase 19: Atomisitas Installer & Disiplin Permukaan API
+
+- **Komponen Target:** `menu-api install/uninstall`, daftar `HANDLERS`, symlink, `token()`, `README.md`.
+- **Finding:**
+  - Fetch gagal di tengah (`-f` tanpa `--max-time`, tanpa checksum): instalasi setengah (`/usr/bin/rere` campur versi) dilaporkan gagal tapi tidak di-rollback — uji dengan URL mati dan matikan network di tengah jalan.
+  - `uninstall` tanpa `reset-failed`: unit yang pernah trip tetap failed pasca-reinstall.
+  - `token()` bisa menghasilkan <40 char setelah strip `base64` (drift vs klaim README).
+  - Permukaan tak terdokumentasi: `/api/add-xray` langsung (proto=`"xray"` membingungkan), semua method mengeksekusi semua handler (tabel bilang GET/POST/DELETE/PUT).
+- **Fixing:**
+  - Staging dir + pindah atomik (atau rollback eksplisit); timeout di semua fetch; sinkronkan README dengan perilaku nyata; tanpa tanda-tangan-berat/PKI baru.
+
+---
+
+### Fase 20: Gerbang Regresi & Sinkron Docs
 
 - **Komponen Target:** perubahan apa pun + `README.md` (tabel kontrak, contoh curl, bagian Coverage/Security).
 - **Finding:**
