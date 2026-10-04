@@ -244,6 +244,10 @@ Fase 16: Gerbang regresi & sinkron docs
   - Stale-cache `raw.githubusercontent`: bila fetch gagal padahal file baru di-push, fallback ke URL commit-pinned atau jsDelivr (terdokumentasi di README).
   - Dependensi (`python3`, `jq`, `curl`) hilang dan apt gagal → gagal eksplisit.
   - Gate otorisasi dua sumber: `PERMISSION_PRIMARY` (Pages) lalu `PERMISSION_FALLBACK` (GitHub); pastikan tak ada sisa `PERMISSION_URL` tunggal, kedua sumber isinya setara (jumlah `###` sama), dan keduanya mati → fail-closed sebelum mutasi.
+- **Finding umum area gate (di luar fallback):**
+  - Semua `curl` di gate ber-timeout (`--max-time`) agar network macet tak menggantung install/menu tanpa batas; IP kosong → error eksplisit.
+  - Pencocokan IP harus eksak terhadap kolom IP (substring/regex-dot bisa false-positive); respons HTML error dari CDN tak boleh jadi MATCH palsu atau tercetak ke output.
+  - Expiry rusak (`lifetime` vs tanggal vs format salah) → gagal tertutup; token/kunci tak pernah tampil di log.
 - **Fixing:**
   - Fail-fast tiap fetch; jangan lanjutkan instalasi bila satu komponen gagal diunduh.
 

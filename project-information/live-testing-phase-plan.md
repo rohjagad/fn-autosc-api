@@ -259,3 +259,6 @@ Fase 19: Fallback URL otorisasi (Pages + GitHub)
   3. Blokir primer sementara → gate tetap hijau via GitHub, perilaku identik.
   4. Blokir keduanya → fail-closed (`Failed to download permissions.`, exit non-nol) sebelum mutasi.
   5. Kembalikan jaringan; pastikan tak ada sisa blokir di VPS.
+- **Uji umum area gate (di luar fallback):**
+  6. `menu-api install` di bawah network lambat: tiap fetch gagal-cepat (`FAILED to fetch ...`) tanpa menggantung; instalasi setengah jalan dilaporkan, bukan sukses.
+  7. Respons HTML error sebagai `izin.txt`: gate menolak tanpa MATCH palsu dan tanpa mencetak isi respons.
