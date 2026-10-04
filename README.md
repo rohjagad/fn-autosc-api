@@ -53,9 +53,9 @@ Request body is a JSON object on stdin; the response is a JSON object on stdout.
 | `add-noobz` | POST | `username`, `password`, `expired` | `noobzvpns` |
 | `list-xray` | GET | - | the four `json/*.json` (username, expiry, transport) |
 | `list-ssh` / `cek-ssh` | GET | - | `list-ssh` / `cek-login-ssh` (text body) |
-| `cek-xray` | GET | - | the four `cek-xray-*` (text body) |
+| `cek-xray` | GET | - | the four `cek-xray-*` (text body; explicit error if a tool is missing) |
 | `list-noobz` | GET | - | `noobzvpns print-all` (text body) |
-| `delete-xray` | DELETE | `username` | `delete-ws/http/xhttp/grpc`, for every transport that holds it |
+| `delete-xray` | DELETE | `username` | `delete-ws/http/xhttp/grpc`, for every transport that holds it | `status`, `username`, `deleted_from[]` (+ `partial:true`, `failed_from[]` when a transport refuses) |
 | `delete-ssh` | DELETE | `username` | `delete-ssh` |
 | `delete-noobz` | DELETE | `username` | `noobzvpns remove` |
 | `renew-xray` | PUT/POST | `username`, `days`, `core` (default `ws`) | `extend-<core>` - keeps the account's usage |
@@ -120,6 +120,10 @@ HTTP 500 shape rather than dropping the connection.
   units - with no locking of their own, so they must never run concurrently; concurrent
   calls queue instead of racing. nginx fronts this server and buffers requests, so there
   is nothing to gain from handling them in parallel.
+- The accept queue holds 64 connections, a silent socket is dropped after 30s, and
+  bodies over 1MB are refused (HTTP 413) - small explicit bounds so one stuck
+  client cannot wedge the single thread. Normal use (small JSON, local nginx)
+  never touches them.
 - The server binds **`127.0.0.1`** by default, so the API is reachable only through nginx's
   `/api/` location; pass `--bind` explicitly if you ever want it elsewhere. It also rejects paths
   with more than one segment, so a request cannot reach a handler outside `/usr/bin/rere/`.
