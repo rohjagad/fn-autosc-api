@@ -64,7 +64,7 @@ Fase 4:  Traversal path & endpoint tak dikenal
    │
 Fase 5:  Create Xray core ws
    │
-Fase 6:  Create Xray core http, split & grpc
+Fase 6:  Create Xray core http, xhttp & grpc
    │
 Fase 7:  Validitas link via client xray sungguhan
    │
@@ -136,11 +136,11 @@ Fase 19: Fallback URL otorisasi (Pages + GitHub)
   3. Duplikat username → error berisi alasan panel, tanpa akun ganda.
   4. `core: "upgrade"` (nama internal panel) → ditolak; yang benar `http` (kontrak publik).
 
-### Fase 6: Create Xray Core `http`, `split` & `grpc`
+### Fase 6: Create Xray Core `http`, `xhttp` & `grpc`
 
 - **Tujuan:** 9 kombinasi tersisa (3 proto × 3 core) selebar core `ws`.
 - **Langkah Pengujian:**
-  1. Ulangi matriks Fase 5 untuk `http`, `split`, `grpc` (akun `livetest_*` berbeda per sel).
+  1. Ulangi matriks Fase 5 untuk `http`, `xhttp`, `grpc` (akun `livetest_*` berbeda per sel; `split` tetap diterima sebagai alias).
   2. `core` tak dikenal (`"ss"`, `"wireguard"`, angka) → error menyebut daftar valid.
   3. Verifikasi tiap akun mendarat di JSON yang benar (`upgrade.json` untuk `http`, dst.) dengan `"level": 0`.
 
@@ -148,9 +148,9 @@ Fase 19: Fallback URL otorisasi (Pages + GitHub)
 
 - **Tujuan:** Link yang dikembalikan benar-benar konek, bukan sekadar string.
 - **Langkah Pengujian:**
-  1. Pilih 1 link per core (`ws`, `http`, `split`, `grpc`): jalankan `xray-core` lokal, download payload 5MB, checksum identik dengan direct.
+  1. Pilih 1 link per core (`ws`, `http`, `xhttp`, `grpc`): jalankan `xray-core` lokal, download payload 5MB, checksum identik dengan direct.
   2. Decode `id`/password link == kredensial yang dibuat via API.
-  3. Catatan XHTTP: link core `split` kini bertipe `xhttp` dengan path `/vmxh`, `/vlxh`, `/trxh` (nama core `split` di API tidak berubah).
+  3. Catatan XHTTP: `core` kini `xhttp` (alias legacy `split` tetap diterima dan dipetakan ke `xhttp`); link bertipe `xhttp` dengan path `/vmxh`, `/vlxh`, `/trxh`.
   3. Hapus keempat akun via API sesudahnya.
 
 ### Fase 8: Read-Only, Cek & Unsupported

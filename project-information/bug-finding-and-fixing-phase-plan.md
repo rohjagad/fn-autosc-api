@@ -32,7 +32,7 @@ Setiap langkah dalam seluruh fase **WAJIB** membaca dan mengacu pada 7 sumber re
 
 ### 2.2 Metodologi Fixing (Perbaikan Bug)
 1. **Shortest Working Diff Wins:** patch minimal; tanpa dependensi baru (server tetap stdlib-only, handler tetap bash+jq).
-2. **Anti Over-Strictness:** jangan tolak input sah yang panel terima; pesan error menyebut nilai yang benar (contoh: core `ws|http|split|grpc`).
+2. **Anti Over-Strictness:** jangan tolak input sah yang panel terima; pesan error menyebut nilai yang benar (contoh: core `ws|http|xhttp|grpc`).
 3. **Gagal Tertutup (Fail Closed):** token hilang/tak terbaca → tolak; tool panel tak ada (edisi lite) → error eksplisit, bukan sukses palsu.
 4. **Evaluasi 4 Kriteria Regresi** untuk setiap perubahan (lihat tabel referensi #7).
 
@@ -202,7 +202,7 @@ Fase 16: Gerbang regresi & sinkron docs
 
 - **Komponen Target:** `handlers/ping`, `list-xray`, `list-ssh`, `list-noobz`, `cek-xray`, `cek-ssh`.
 - **Finding:**
-  - `list-xray` vs `grep '^###'` langsung: jumlah + nama + expiry + transport (`ws|http|split|grpc`, bukan `upgrade` internal).
+  - `list-xray` vs `grep '^###'` langsung: jumlah + nama + expiry + transport (`ws|http|xhttp|grpc`, bukan `upgrade` internal).
   - Handler teks (`list-ssh`, `cek-*`, `list-noobz`): output panel diteruskan utuh tanpa pembungkus JSON ganda yang merusak parser klien.
   - Database/JSON kosong → tetap `success`-konsisten (array kosong / teks kosong), bukan error.
   - `ping` via method apa pun → 200; tanpa token → 401.
