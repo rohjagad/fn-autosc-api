@@ -8,17 +8,18 @@ Repo ini kecil (±800 baris) tetapi berjalan sebagai **root** dan memutasi state
 
 ## 1. Dokumen & Sumber Referensi Wajib (Mandatory References)
 
-Setiap langkah dalam seluruh fase **WAJIB** membaca dan mengacu pada 7 sumber referensi utama berikut sebelum melakukan analisis, perubahan kode, atau evaluasi regresi:
+Setiap langkah dalam seluruh fase **WAJIB** membaca dan mengacu pada 8 sumber referensi utama berikut sebelum melakukan analisis, perubahan kode, atau evaluasi regresi:
 
 | # | Sumber Referensi | Lokasi / Perintah | Kegunaan & Batas Kepatuhan |
 | :- | :--- | :--- | :--- |
-| 1 | **Git Commit History** | `git log --stat` / `git log -p` | Riwayat mengapa tiap hardening ada (single-thread revert, lock yang dibuang, `re_escape`, `require` di luar subshell). Jangan mengulang kesalahan yang sudah diperbaiki. |
+| 1 | **Git Commit History** | `git log --stat` / `git log -p` (`-- <berkas-sentuh>` untuk audit terfokus) | Riwayat mengapa tiap hardening ada (single-thread revert, lock yang dibuang, `re_escape`, `require` di luar subshell). Jangan mengulang kesalahan yang sudah diperbaiki. Verifikasi klaim pesan commit terhadap diff-nya. |
 | 2 | **FN-API Reference** | `https://github.com/rohjagad/FN-API` (read-only) | Daftar endpoint asli. Dipakai hanya sebagai daftar; tidak ada yang di-fetch/diubah dari sana. |
 | 3 | **Panel Backend Contract** | Skrip panel di VPS: `/usr/bin/add-*`, `/usr/bin/delete-*`, `/usr/bin/extend-*`, `/usr/bin/rere/` terinstal | Handler hanyalah pembungkus; prompt, file state, dan restart milik panel. Uji handler = uji kesesuaian dengan perilaku panel aktual, bukan asumsi. |
 | 4 | **Panel Decisions** | `fn-autosc: project-information/is-decision.md` (khusus Decision 4 `0 not allowed`, Decision 18 desain API, Decision 23 `"level": 0`) | Batas yang diwarisi endpoint (contoh: `limit-ip`/`quota`/`expired` mengikuti validasi panel; transport `http` bukan `upgrade`). |
 | 5 | **Panel API Spec** | `fn-autosc: project-information/fn-api.md` | Kontrak request/response, bentuk `{"status":...}`, daftar endpoint, catatan batasan edisi lite. |
 | 6 | **Live VPS Target** | `202.155.17.126` (SSH port `3303`, domain `autosc.rohcuan.dpdns.org`) | Verifikasi perilaku nyata, bukan inspeksi sumber saja. Aturan akun uji `testcard*` / `livetest*` berlaku. |
 | 7 | **Regresi Silang** | `git log` repo ini + Section 4-Check di bawah | Setiap perubahan wajib lulus 4 kriteria: Regression, Over-Strictness, Over-Engineering, Source Alignment. |
+| 8 | **Dokumen Repo Sendiri** | `README.md`, `project-information/live-testing-phase-plan.md`, dan plan ini | Klaim kontrak (tabel endpoint, bentuk respons, angka 40-char/`0600`/backlog) wajib cocok dengan kode; klaim "verified" wajib punya langkah yang sesuai di live-plan. |
 
 ---
 
@@ -31,6 +32,7 @@ Setiap langkah dalam seluruh fase **WAJIB** membaca dan mengacu pada 7 sumber re
 4. **Verifikasi Kontrak Respons:** sukses harus berarti perubahan benar terjadi di config (pola `verify`, bukan klaim buta); error harus `{"status":"error","message":...}` + exit 0, bukan exit non-nol (itu = HTTP 500).
 5. **Audit Dokumen & Kontrak:** setiap fase wajib memeriksa klaim dalam cakupannya di `README.md`, kedua phase-plan repo ini, dan dokumen `fn-autosc` (`is-decision.md`, `fn-api.md`) — drift dokumen-vs-kode, kontradiksi antar-dokumen, dan verifikasi yang tak bisa membuktikan klaimnya (pola false-positive: probe yang lolos baik sehat maupun rusak). Dok non-append-only dikoreksi di tempat.
 6. **Audit Riwayat Commit:** `git log -p -- <berkas-sentuh>` — pastikan fix terdahulu benar melakukan klaim commit-nya, deteksi revert/regresi diam-diam dan mismatch pesan-vs-diff.
+7. **Konsistensi Silang Antar-Berkas (Gerbang Angka):** repo ini tak punya penomoran append-only, jadi gerbang angkanya adalah cakupan nama endpoint: tiap nama di `HANDLERS` `menu-api` + 2 alias (`add-ss`/`add-socks` → `unsupported`) + endpoint langsung `add-xray` wajib tercakup di tabel kontrak `README.md` dan daftar endpoint `fn-api.md` panel, dan tiap handler wajib punya berkas di `handlers/` — selisih yang belum terlacak adalah temuan (catatan: absennya `add-xray` di README sudah terlacak sebagai temuan Fase 19, bukan temuan baru). Angka statis di dokumen ("19 handler") adalah drift bila hitungan grep berbeda. Aturan yang sama berlaku ke nomor Found/Fix/Section di dokumen panel yang dirujuk.
 
 ### 2.2 Metodologi Fixing (Perbaikan Bug)
 1. **Shortest Working Diff Wins:** patch minimal; tanpa dependensi baru (server tetap stdlib-only, handler tetap bash+jq).
