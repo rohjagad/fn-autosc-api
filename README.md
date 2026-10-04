@@ -48,14 +48,14 @@ Request body is a JSON object on stdin; the response is a JSON object on stdout.
 | Endpoint | Method | Body fields | Backend |
 | :-- | :-- | :-- | :-- |
 | `ping` | any | - | health check |
-| `add-vmess` / `add-vless` / `add-trojan` | POST | `username`, `core` (`ws`/`http`/`split`/`grpc`, default `ws`), `expired` (days), `limit-ip`, `quota` | `add-<proto>-<core>` |
+| `add-vmess` / `add-vless` / `add-trojan` | POST | `username`, `core` (`ws`/`http`/`xhttp`/`grpc`, default `ws`; `split` still accepted as an alias), `expired` (days), `limit-ip`, `quota` | `add-<proto>-<core>` |
 | `addssh` | POST | `username`, `password`, `expired`, `limit-ip` | `addssh` |
 | `add-noobz` | POST | `username`, `password`, `expired` | `noobzvpns` |
 | `list-xray` | GET | - | the four `json/*.json` (username, expiry, transport) |
 | `list-ssh` / `cek-ssh` | GET | - | `list-ssh` / `cek-login-ssh` (text body) |
 | `cek-xray` | GET | - | the four `cek-xray-*` (text body) |
 | `list-noobz` | GET | - | `noobzvpns print-all` (text body) |
-| `delete-xray` | DELETE | `username` | `delete-ws/http/split/grpc`, for every transport that holds it |
+| `delete-xray` | DELETE | `username` | `delete-ws/http/xhttp/grpc`, for every transport that holds it |
 | `delete-ssh` | DELETE | `username` | `delete-ssh` |
 | `delete-noobz` | DELETE | `username` | `noobzvpns remove` |
 | `renew-xray` | PUT/POST | `username`, `days`, `core` (default `ws`) | `extend-<core>` - keeps the account's usage |
@@ -63,7 +63,7 @@ Request body is a JSON object on stdin; the response is a JSON object on stdout.
 | `password-ssh` | PUT/POST | `username`, `password` | `pwd-ssh` - also rewrites the account card |
 | `add-ss`, `add-socks` | - | - | error JSON: no Shadowsocks/Socks5 backend exists (nor in either reference version) |
 
-The transport is named the same everywhere: `core` accepts `ws`, `http`, `split` or `grpc`, and
+The transport is named the same everywhere: `core` accepts `ws`, `http`, `xhttp` or `grpc`, and
 `list-xray` / `delete-xray` report it back under those names (the panel's own `upgrade` name for the
 HTTPUpgrade transport is not exposed). Every handler verifies the panel actually did the work and
 answers `{"status":"error",...}` when it did not - a `success` means the change is in the config.

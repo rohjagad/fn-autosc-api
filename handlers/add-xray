@@ -1,6 +1,7 @@
 #!/bin/bash
 # FN-API: create an Xray account.
-# Body: {"username":"alice","core":"ws|http|split|grpc","expired":30,"limit-ip":2,"quota":5}
+# Body: {"username":"alice","core":"ws|http|xhttp|grpc","expired":30,"limit-ip":2,"quota":5}
+# ("split" is accepted as a legacy alias for "xhttp".)
 # The protocol comes from the handler name (add-vmess / add-vless / add-trojan).
 . /usr/local/lib/fn-api/lib.sh
 proto="${0##*/add-}"
@@ -9,6 +10,7 @@ proto="${0##*/add-}"
 require username user
 esc="$(re_escape "$user")"
 core="$(field core ws)"
+[ "$core" = split ] && core=xhttp  # legacy alias from the SplitHTTP era
 days="$(field expired 30)"
 ip="$(field limit-ip 1)"
 quota="$(field quota 1)"
@@ -19,7 +21,7 @@ quota="$(field quota 1)"
     fail "invalid username '${user}': lowercase letters, numbers and underscore only"
 
 script="/usr/bin/add-${proto}-${core}"
-[ -x "$script" ] || fail "unsupported core '${core}' for ${proto} (use ws, http, split or grpc)"
+[ -x "$script" ] || fail "unsupported core '${core}' for ${proto} (use ws, http, xhttp or grpc)"
 
 # Fail fast on duplicates: the panel refuses a taken name, but the
 # verify-grep below would then match the pre-existing entry and report
@@ -29,7 +31,7 @@ script="/usr/bin/add-${proto}-${core}"
 case "$core" in
     ws)    dupjson=/etc/xray/json/ws.json ;;
     http)  dupjson=/etc/xray/json/upgrade.json ;;
-    split) dupjson=/etc/xray/json/split.json ;;
+    xhttp) dupjson=/etc/xray/json/xhttp.json ;;
     grpc)  dupjson=/etc/xray/json/grpc.json ;;
 esac
 grep -qE "^### ${esc}( |$)" "$dupjson" 2>/dev/null && \

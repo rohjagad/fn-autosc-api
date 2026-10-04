@@ -1,6 +1,7 @@
 #!/bin/bash
 # FN-API: extend an Xray account's expiry.
-# Body: {"username":"alice","days":30,"core":"ws|http|split|grpc"}
+# Body: {"username":"alice","days":30,"core":"ws|http|xhttp|grpc"}
+# ("split" is accepted as a legacy alias for "xhttp".)
 # The panel's extend-* scripts prompt username, days, then "reset total usage
 # quota? (y/n)"; the account's usage is kept (answer n).
 . /usr/local/lib/fn-api/lib.sh
@@ -8,13 +9,14 @@ require username user
 esc="$(re_escape "$user")"
 days="$(field days 30)"
 core="$(field core ws)"
+[ "$core" = split ] && core=xhttp  # legacy alias from the SplitHTTP era
 
 case "$core" in
     ws)    json=/etc/xray/json/ws.json;      tool=/usr/bin/extend-ws ;;
     http)  json=/etc/xray/json/upgrade.json; tool=/usr/bin/extend-http ;;
-    split) json=/etc/xray/json/split.json;   tool=/usr/bin/extend-split ;;
+    xhttp) json=/etc/xray/json/xhttp.json;   tool=/usr/bin/extend-xhttp ;;
     grpc)  json=/etc/xray/json/grpc.json;    tool=/usr/bin/extend-grpc ;;
-    *)     fail "unsupported core '${core}' for renew (use ws, http, split or grpc)" ;;
+    *)     fail "unsupported core '${core}' for renew (use ws, http, xhttp or grpc)" ;;
 esac
 [ -x "$tool" ] || fail "this panel edition does not ship '${tool##*/}'"
 

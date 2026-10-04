@@ -7,7 +7,7 @@ esc="$(re_escape "$user")"
 
 seen=""
 deleted=""
-for t in ws upgrade split grpc; do
+for t in ws upgrade xhttp grpc; do
     json="/etc/xray/json/${t}.json"
     core="$t"
     [ "$t" = upgrade ] && core="http"          # the name the create endpoints accept
@@ -16,7 +16,7 @@ for t in ws upgrade split grpc; do
     case $t in
         ws)      printf '%s\n' "$user" | /usr/bin/delete-ws    >/dev/null 2>&1 ;;
         upgrade) printf '%s\n' "$user" | /usr/bin/delete-http  >/dev/null 2>&1 ;;
-        split)   printf '%s\n' "$user" | /usr/bin/delete-split >/dev/null 2>&1 ;;
+        xhttp)   printf '%s\n' "$user" | /usr/bin/delete-xhttp >/dev/null 2>&1 ;;
         grpc)    printf '%s\n' "$user" | /usr/bin/delete-grpc  >/dev/null 2>&1 ;;
     esac
     # Verify, like add-xray and delete-ssh do; a delete script that failed must

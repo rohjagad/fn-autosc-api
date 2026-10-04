@@ -1,11 +1,11 @@
 #!/bin/bash
 # FN-API: list every Xray account, with its transport and expiry.
 # The transport is reported under the same name the create endpoints accept
-# (ws / http / split / grpc), so a caller can feed it straight back into
+# (ws / http / xhttp / grpc), so a caller can feed it straight back into
 # add-xray, delete-xray or renew-xray.
 . /usr/local/lib/fn-api/lib.sh
 {
-  for t in ws upgrade split grpc; do
+  for t in ws upgrade xhttp grpc; do
     core="$t"
     [ "$t" = upgrade ] && core="http"
     grep -E '^### ' "/etc/xray/json/${t}.json" 2>/dev/null | awk -v t="$core" '{print $2" "$3" "t}'
