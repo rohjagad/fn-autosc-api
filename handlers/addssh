@@ -8,10 +8,11 @@ require password pass
 ip="$(field limit-ip 1)"
 days="$(field expired 30)"
 
-# The panel does not validate the name; keep it to characters useradd and the
-# panel's own file paths can carry.
-[[ "$user" =~ ^[A-Za-z0-9_.-]+$ ]] || \
-    fail "invalid username '${user}': letters, numbers, dot, dash and underscore only"
+# Mirror the panel's own rule (addssh.sh): lowercase, start with a letter,
+# max 32 chars. Anything else makes the panel re-prompt from an exhausted
+# stdin instead of creating, so reject it here with a clear error.
+[[ "$user" =~ ^[a-z][a-z0-9_]{0,31}$ ]] || \
+    fail "invalid username '${user}': lowercase, start with a letter, letters/numbers/underscore only, max 32 chars"
 
 # Fail fast on duplicates (same reason as add-xray): the verify below would
 # match the pre-existing account and claim success for a no-op.
