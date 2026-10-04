@@ -63,6 +63,9 @@ Request body is a JSON object on stdin; the response is a JSON object on stdout.
 | `password-ssh` | PUT/POST | `username`, `password` | `pwd-ssh` - also rewrites the account card |
 | `add-ss`, `add-socks` | - | - | error JSON: no Shadowsocks/Socks5 backend exists (nor in either reference version) |
 
+The Method column is the convention nginx and clients use; the server itself
+runs the handler for any method, so a wrong method never hides a real result.
+
 The transport is named the same everywhere: `core` accepts `ws`, `http`, `xhttp` or `grpc`, and
 `list-xray` / `delete-xray` report it back under those names (the panel's own `upgrade` name for the
 HTTPUpgrade transport is not exposed). Every handler verifies the panel actually did the work and

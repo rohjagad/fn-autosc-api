@@ -103,6 +103,7 @@ uninstall_api() {
     rm -f "$UNIT" /usr/bin/api-server
     rm -rf /usr/bin/rere /usr/local/lib/fn-api
     systemctl daemon-reload
+    systemctl reset-failed api >/dev/null 2>&1 || true
     echo "  uninstalled (the token stays in $KEY)"
 }
 
