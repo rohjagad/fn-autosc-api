@@ -29,6 +29,8 @@ Setiap langkah dalam seluruh fase **WAJIB** membaca dan mengacu pada 7 sumber re
 2. **Injeksi Kegagalan Batas:** body JSON kosong / bukan-JSON / field hilang / field bertipe salah; username `"a.b"`, `".*"`, `"../x"`, string 10KB; `core` tak dikenal; token kosong / 10KB.
 3. **Audit Diferensial Panel:** setiap handler yang mem-pipe jawaban ke skrip panel (`printf ... | "$script"`) wajib dicocokkan jumlah/urutan prompt terhadap skrip panel aktual di VPS — prompt panel yang berubah membuat jawaban bergeser (kredensial masuk ke field yang salah).
 4. **Verifikasi Kontrak Respons:** sukses harus berarti perubahan benar terjadi di config (pola `verify`, bukan klaim buta); error harus `{"status":"error","message":...}` + exit 0, bukan exit non-nol (itu = HTTP 500).
+5. **Audit Dokumen & Kontrak:** setiap fase wajib memeriksa klaim dalam cakupannya di `README.md`, kedua phase-plan repo ini, dan dokumen `fn-autosc` (`is-decision.md`, `fn-api.md`) — drift dokumen-vs-kode, kontradiksi antar-dokumen, dan verifikasi yang tak bisa membuktikan klaimnya (pola false-positive: probe yang lolos baik sehat maupun rusak). Dok non-append-only dikoreksi di tempat.
+6. **Audit Riwayat Commit:** `git log -p -- <berkas-sentuh>` — pastikan fix terdahulu benar melakukan klaim commit-nya, deteksi revert/regresi diam-diam dan mismatch pesan-vs-diff.
 
 ### 2.2 Metodologi Fixing (Perbaikan Bug)
 1. **Shortest Working Diff Wins:** patch minimal; tanpa dependensi baru (server tetap stdlib-only, handler tetap bash+jq).
