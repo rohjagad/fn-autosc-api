@@ -53,14 +53,14 @@ install_api() {
     command -v jq      >/dev/null || apt-get install -y -qq jq
     command -v curl    >/dev/null || apt-get install -y -qq curl
     echo "  fetching the API server..."
-    curl -fsSL -o /usr/bin/api-server "$hosting/server" || { echo "  FAILED to fetch server"; return 1; }
+    curl -fsSL --max-time 60 -o /usr/bin/api-server "$hosting/server" || { echo "  FAILED to fetch server"; return 1; }
     chmod +x /usr/bin/api-server
 
     mkdir -p /usr/local/lib/fn-api /usr/bin/rere /etc/xray
-    curl -fsSL -o /usr/local/lib/fn-api/lib.sh "$hosting/lib.sh" || { echo "  FAILED to fetch lib.sh"; return 1; }
+    curl -fsSL --max-time 60 -o /usr/local/lib/fn-api/lib.sh "$hosting/lib.sh" || { echo "  FAILED to fetch lib.sh"; return 1; }
     chmod +x /usr/local/lib/fn-api/lib.sh
     for h in $HANDLERS; do
-        curl -fsSL -o "/usr/bin/rere/$h" "$hosting/handlers/$h" || { echo "  FAILED to fetch handlers/$h"; return 1; }
+        curl -fsSL --max-time 60 -o "/usr/bin/rere/$h" "$hosting/handlers/$h" || { echo "  FAILED to fetch handlers/$h"; return 1; }
         chmod +x "/usr/bin/rere/$h"
     done
     ln -sf unsupported /usr/bin/rere/add-ss
