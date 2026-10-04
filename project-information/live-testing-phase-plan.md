@@ -51,7 +51,7 @@ Setiap pengujian pada seluruh fase **WAJIB** merujuk dan mencocokkan hasil aktua
 
 ---
 
-## 3. Struktur 18 Fase Pengujian Live
+## 3. Struktur 19 Fase Pengujian Live
 
 ```
 Fase 1:  Lifecycle install/status/uninstall
@@ -89,6 +89,8 @@ Fase 16: Timeout & body malformed
 Fase 17: Audit log & kebocoran rahasia
    │
 Fase 18: Cleanup, uninstall & box-as-found
+   │
+Fase 19: Fallback URL otorisasi (Pages + GitHub)
 ```
 
 ---
@@ -148,6 +150,7 @@ Fase 18: Cleanup, uninstall & box-as-found
 - **Langkah Pengujian:**
   1. Pilih 1 link per core (`ws`, `http`, `split`, `grpc`): jalankan `xray-core` lokal, download payload 5MB, checksum identik dengan direct.
   2. Decode `id`/password link == kredensial yang dibuat via API.
+  3. Catatan XHTTP: link core `split` kini bertipe `xhttp` dengan path `/vmxh`, `/vlxh`, `/trxh` (nama core `split` di API tidak berubah).
   3. Hapus keempat akun via API sesudahnya.
 
 ### Fase 8: Read-Only, Cek & Unsupported
@@ -246,3 +249,13 @@ Fase 18: Cleanup, uninstall & box-as-found
   2. `xray -test` valid semua transport; 0 failed unit; file sisa (`/tmp/snap-*` boleh dihapus).
   3. `menu-api uninstall` → service `inactive`, biner/handler hilang, token bertahan `0600` (terdokumentasi).
   4. Salinan token lokal di-`shred -u`; tidak ada kredensial uji tersisa di client.
+
+### Fase 19: Fallback URL Otorisasi (Pages + GitHub)
+
+- **Tujuan:** Gate `menu-api` tahan terhadap matinya salah satu sumber `izin.txt`.
+- **Langkah Pengujian:**
+  1. Jumlah baris `###` dari Pages dan GitHub sama (sumber beda, data sama).
+  2. Primer hidup: `menu-api status` hijau via Pages.
+  3. Blokir primer sementara → gate tetap hijau via GitHub, perilaku identik.
+  4. Blokir keduanya → fail-closed (`Failed to download permissions.`, exit non-nol) sebelum mutasi.
+  5. Kembalikan jaringan; pastikan tak ada sisa blokir di VPS.

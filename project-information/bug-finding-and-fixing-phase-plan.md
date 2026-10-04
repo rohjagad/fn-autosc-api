@@ -243,6 +243,7 @@ Fase 16: Gerbang regresi & sinkron docs
   - Tiap `curl -fsSL` gagal → `FAILED to fetch ...` + return 1 (instalasi setengah jalan dilaporkan, bukan sukses). Uji dengan URL mati.
   - Stale-cache `raw.githubusercontent`: bila fetch gagal padahal file baru di-push, fallback ke URL commit-pinned atau jsDelivr (terdokumentasi di README).
   - Dependensi (`python3`, `jq`, `curl`) hilang dan apt gagal → gagal eksplisit.
+  - Gate otorisasi dua sumber: `PERMISSION_PRIMARY` (Pages) lalu `PERMISSION_FALLBACK` (GitHub); pastikan tak ada sisa `PERMISSION_URL` tunggal, kedua sumber isinya setara (jumlah `###` sama), dan keduanya mati → fail-closed sebelum mutasi.
 - **Fixing:**
   - Fail-fast tiap fetch; jangan lanjutkan instalasi bila satu komponen gagal diunduh.
 
