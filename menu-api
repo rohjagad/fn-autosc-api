@@ -73,6 +73,8 @@ install_api() {
 [Unit]
 Description=FN AutoSC panel HTTP API (FN-API)
 After=network.target
+StartLimitIntervalSec=120
+StartLimitBurst=30
 
 [Service]
 Type=simple
