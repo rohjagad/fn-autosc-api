@@ -104,6 +104,15 @@ class Handler(BaseHTTPRequestHandler):
             logging.error("script not found: %s", script)
             self._send(404, b"Script not found")
             return
+        if os.path.dirname(os.path.realpath(script)) != os.path.realpath(self.server.handlers_dir):
+            # A single-segment name cannot traverse on its own, but a planted
+            # symlink inside the handlers dir could point outside it (e.g. at
+            # /etc/passwd). The installer's own aliases (add-ss/add-socks ->
+            # unsupported) resolve inside the dir, so they still pass.
+            self._info("handler escapes directory: %s" % script)
+            logging.error("handler escapes directory: %s", script)
+            self._send(404, b"Script not found")
+            return
         try:
             env = dict(os.environ, TERM="xterm")
             # An empty string, not None: None would let the handler inherit the
