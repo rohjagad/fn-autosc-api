@@ -42,7 +42,9 @@ def load_tokens(path):
     try:
         with open(path, "r", encoding="utf-8") as fh:
             return [line.strip() for line in fh if line.strip()]
-    except OSError:
+    except (OSError, ValueError):
+        # OSError: missing/unreadable. ValueError (incl. UnicodeDecodeError):
+        # binary/garbled file - fail closed with no tokens, never traceback.
         return []
 
 
