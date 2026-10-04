@@ -23,12 +23,20 @@ Usage:
 import argparse
 import json
 import logging
+import logging.handlers
 import os
 import subprocess
 import sys
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 METHODS = ("GET", "POST", "DELETE", "PUT", "PATCH", "CONNECT", "TRACE", "HEAD", "OPTIONS")
+
+# Bounds that keep the single thread from wedging. nginx fronts this server
+# and buffers full requests, so arrivals here are fast and local; anything
+# slower or bigger than below is a stuck or hostile client, not real use.
+SOCKET_TIMEOUT = 30       # seconds of socket silence before dropping the conn
+MAX_BODY = 1_000_000      # request bodies are small JSON objects; above this, 413
+LISTEN_BACKLOG = 64       # TCP accept queue; handling itself stays serial
 
 # The server is single-threaded, like the reference. That is not a limitation to
 # improve away: the panel's scripts edit shared state (json/*.json, /etc/passwd,
@@ -51,6 +59,10 @@ def load_tokens(path):
 class Handler(BaseHTTPRequestHandler):
     server_version = "fn-autosc-api"
     protocol_version = "HTTP/1.1"
+    # Bound a slow-dripping client: with no timeout a single connection can
+    # hold rfile.read() (and the whole single thread) forever. nginx already
+    # buffers real clients, so this only ever fires on stuck ones.
+    timeout = SOCKET_TIMEOUT
 
     def log_message(self, fmt, *args):  # keep BaseHTTPRequestHandler quiet
         pass
@@ -69,7 +81,13 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header(name, value)
         self.end_headers()
         if self.command != "HEAD":
-            self.wfile.write(raw)
+            try:
+                self.wfile.write(raw)
+            except (BrokenPipeError, ConnectionResetError):
+                # Client went away mid-reply (the OSError branch below already
+                # guarded this; extend it to every reply path). The server
+                # itself is unaffected.
+                pass
 
     def _unauthorized(self):
         self._send(401, b'{"message": "Unauthorized: Missing or invalid Authorization header"}',
@@ -90,6 +108,13 @@ class Handler(BaseHTTPRequestHandler):
             length = int(self.headers.get("Content-Length") or 0)
         except ValueError:
             length = 0
+        if length > MAX_BODY:
+            # Refuse before reading: handler bodies are small JSON, and
+            # leaving a giant body unread would desync the keep-alive framing.
+            # False (not None) tells the do_* caller to skip the handler.
+            self.close_connection = True
+            self._send(413, json.dumps({"error": "request body too large"}).encode())
+            return False
         return self.rfile.read(length).decode("utf-8", "replace") if length > 0 else None
 
     def _run(self, body=None):
@@ -171,22 +196,35 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         if self._authorized():
-            self._run(self._body())
+            body = self._body()
+            if body is not False:
+                self._run(body)
 
     def do_PUT(self):
         if self._authorized():
-            self._run(self._body())
+            body = self._body()
+            if body is not False:
+                self._run(body)
 
     def do_PATCH(self):
         if self._authorized():
-            self._run(self._body())
+            body = self._body()
+            if body is not False:
+                self._run(body)
 
     def do_DELETE(self):
         if self._authorized():
-            self._run(self._body())
+            body = self._body()
+            if body is not False:
+                self._run(body)
 
 
 class Server(HTTPServer):
+    # Absorb connection bursts at accept time (handling itself stays serial,
+    # like the reference). The default queue of 5 drops bursts that nginx or
+    # parallel API clients legitimately produce.
+    request_queue_size = LISTEN_BACKLOG
+
     def __init__(self, addr, handler, handlers_dir, tokens_path):
         super().__init__(addr, handler)
         self.handlers_dir = handlers_dir
@@ -204,7 +242,9 @@ def main(argv=None):
 
     handlers = []
     try:
-        handlers.append(logging.FileHandler(args.log))
+        # WatchedFileHandler re-opens by path per record, so an external
+        # logrotate keeps working instead of silently losing records.
+        handlers.append(logging.handlers.WatchedFileHandler(args.log))
     except OSError as exc:                                  # noqa: PERF203
         print("warning: cannot write %s (%s)" % (args.log, exc), file=sys.stderr)
     logging.basicConfig(level=logging.INFO,
