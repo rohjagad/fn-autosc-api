@@ -8,6 +8,10 @@ require password pass
 ip="$(field limit-ip 1)"
 days="$(field expired 30)"
 
+# Mirror the panel (addssh.sh): quantities are whole numbers > 0.
+[[ "$ip" =~ ^[1-9][0-9]*$ ]] || fail "invalid 'limit-ip' ('${ip}'): whole number greater than 0"
+[[ "$days" =~ ^[1-9][0-9]*$ ]] || fail "invalid 'expired' ('${days}'): whole number greater than 0"
+
 # Mirror the panel's own rule (addssh.sh): lowercase, start with a letter,
 # max 32 chars. Anything else makes the panel re-prompt from an exhausted
 # stdin instead of creating, so reject it here with a clear error.

@@ -15,6 +15,15 @@ days="$(field expired 30)"
 ip="$(field limit-ip 1)"
 quota="$(field quota 1)"
 
+# Mirror the panel's own rules (add-*-*.sh): lowercase name, quantities > 0.
+# Anything else makes the panel re-prompt from an exhausted stdin and fail
+# obscurely at EOF, so reject it here with a clear error.
+[[ "$user" =~ ^[a-z0-9_]+$ ]] || \
+    fail "invalid username '${user}': lowercase letters, numbers and underscore only"
+[[ "$days" =~ ^[1-9][0-9]*$ ]] || fail "invalid 'expired' ('${days}'): whole number greater than 0"
+[[ "$ip" =~ ^[1-9][0-9]*$ ]] || fail "invalid 'limit-ip' ('${ip}'): whole number greater than 0"
+[[ "$quota" =~ ^[1-9][0-9]*$ ]] || fail "invalid 'quota' ('${quota}'): whole number greater than 0"
+
 # The panel enforces this regexp itself and would otherwise re-read the limit-ip
 # answer as the username and fail obscurely at EOF.
 [[ "$user" =~ ^[a-z0-9_]+$ ]] || \

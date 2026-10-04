@@ -10,6 +10,7 @@ esc="$(re_escape "$user")"
 days="$(field days 30)"
 core="$(field core ws)"
 [ "$core" = split ] && core=xhttp  # legacy alias from the SplitHTTP era
+[[ "$days" =~ ^[1-9][0-9]*$ ]] || fail "invalid 'days' ('${days}'): whole number greater than 0"
 
 case "$core" in
     ws)    json=/etc/xray/json/ws.json;      tool=/usr/bin/extend-ws ;;

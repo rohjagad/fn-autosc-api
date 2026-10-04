@@ -6,6 +6,11 @@ require username user
 require password pass
 days="$(field expired 30)"
 
+# Mirror the panel (menu-noobz.sh): 1-16 letters/numbers/underscore, days > 0.
+[[ "$user" =~ ^[a-zA-Z0-9_]{1,16}$ ]] || \
+    fail "invalid username '${user}': 1-16 letters, numbers and underscore only"
+[[ "$days" =~ ^[1-9][0-9]*$ ]] || fail "invalid 'expired' ('${days}'): whole number greater than 0"
+
 # Fail fast on duplicates: noobz_accounts below would match the pre-existing
 # entry and claim success for a no-op.
 noobz_accounts | grep -qF "$user" && fail "username '${user}' already exists"

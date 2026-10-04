@@ -4,6 +4,7 @@
 require_tool extend-ssh
 require username user
 days="$(field days 30)"
+[[ "$days" =~ ^[1-9][0-9]*$ ]] || fail "invalid 'days' ('${days}'): whole number greater than 0"
 
 getent passwd "$user" >/dev/null 2>&1 || fail "no such account: ${user}"
 
