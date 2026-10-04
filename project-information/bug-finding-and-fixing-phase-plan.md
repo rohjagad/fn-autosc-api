@@ -335,7 +335,7 @@ Fase 20: Gerbang regresi & sinkron docs
 - **Finding:**
   - Fetch gagal di tengah (`-f` tanpa `--max-time`, tanpa checksum): instalasi setengah (`/usr/bin/rere` campur versi) dilaporkan gagal tapi tidak di-rollback — uji dengan URL mati dan matikan network di tengah jalan.
   - `uninstall` tanpa `reset-failed`: unit yang pernah trip tetap failed pasca-reinstall.
-  - `token()` bisa menghasilkan <40 char setelah strip `base64` (drift vs klaim README).
+  - `token()` selalu 40 char sejak Fix 343 (dulu `head -c 32` bisa <40 setelah strip; Fase 19 mencatatnya sebelum diperbaiki).
   - Permukaan tak terdokumentasi: `/api/add-xray` langsung (proto=`"xray"` membingungkan), semua method mengeksekusi semua handler (tabel bilang GET/POST/DELETE/PUT).
 - **Fixing:**
   - Staging dir + pindah atomik (atau rollback eksplisit); timeout di semua fetch; sinkronkan README dengan perilaku nyata; tanpa tanda-tangan-berat/PKI baru.

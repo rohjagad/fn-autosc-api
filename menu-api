@@ -15,7 +15,7 @@ UNIT=/etc/systemd/system/api.service
 
 red='\033[0;31m'; green='\033[0;32m'; purple='\033[1;35m'; orange='\033[38;5;208m'; NC='\033[0m'
 
-token() { head -c 32 /dev/urandom | base64 | tr -d '/+=\n' | head -c 40; }
+token() { head -c 48 /dev/urandom | base64 | tr -d '/+=\n' | head -c 40; }
 
 gate() {
     local PERMISSION_PRIMARY="https://fn-autosc-auth.pages.dev/izin.txt"
