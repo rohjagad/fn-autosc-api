@@ -53,7 +53,7 @@ grep -qE "^### ${esc}( |$)" /etc/xray/json/*.json 2>/dev/null || \
     fail "the panel did not create '${user}'$(panel_reason "$out" | sed 's/^/: /')"
 
 exp="$(grep -hoE "^### ${esc} [0-9-]+" /etc/xray/json/*.json 2>/dev/null | awk '{print $3}' | head -1)"
-links="$(printf '%s' "$out" | grep -oE '(vmess|vless|trojan)://[^[:space:]`]+')"
+links="$(printf '%s' "$out" | grep -oE '(vmess|vless|trojan)://[^[:space:]]+')"
 jq -nc --arg u "$user" --arg p "$proto" --arg c "$core" --arg e "$exp" \
        --argjson l "$(json_array "$links")" \
   '{status:"success",username:$u,protocol:$p,core:$c,expired:$e,links:$l}'
