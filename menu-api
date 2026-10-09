@@ -18,15 +18,15 @@ red='\033[0;31m'; green='\033[0;32m'; purple='\033[1;35m'; orange='\033[38;5;208
 token() { head -c 48 /dev/urandom | base64 | tr -d '/+=\n' | head -c 40; }
 
 gate() {
-    local PERMISSION_PRIMARY="https://fn-autosc-auth.pages.dev/izin.txt"
-    local PERMISSION_FALLBACK="https://raw.githubusercontent.com/rohjagad/fn-autosc-auth/main/izin.txt"
+    local PERMISSION_CFPAGES="https://fn-autosc-auth.pages.dev/izin.txt"
+    local PERMISSION_GITHUB="https://raw.githubusercontent.com/rohjagad/fn-autosc-auth/main/izin.txt"
     local LOCAL_IP PERMISSION_DATA MATCH EXPIRED_DATE REMAINING_DAYS USERNAME PERMISSION_IP
     LOCAL_IP=$(curl -4 -s --max-time 15 ifconfig.me)
     [ -n "$LOCAL_IP" ] || { echo "Could not determine public IPv4 (check network/DNS)."; exit 1; }
             # Fetch both auth sources at once; first complete valid reply wins (OR logic).
     PERMISSION_TMP=$(mktemp -d) || { echo "Failed to download permissions."; exit 1; }
-    (curl -s --max-time 12 "$PERMISSION_PRIMARY" -o "$PERMISSION_TMP/a" 2>/dev/null; touch "$PERMISSION_TMP/a.done") &
-    (curl -s --max-time 12 "$PERMISSION_FALLBACK" -o "$PERMISSION_TMP/b" 2>/dev/null; touch "$PERMISSION_TMP/b.done") &
+    (curl -s --max-time 12 "$PERMISSION_CFPAGES" -o "$PERMISSION_TMP/a" 2>/dev/null; touch "$PERMISSION_TMP/a.done") &
+    (curl -s --max-time 12 "$PERMISSION_GITHUB" -o "$PERMISSION_TMP/b" 2>/dev/null; touch "$PERMISSION_TMP/b.done") &
     PERMISSION_DATA=""; end=$((SECONDS+15))
     while [ $SECONDS -lt $end ]; do
         for f in "$PERMISSION_TMP/a" "$PERMISSION_TMP/b"; do
